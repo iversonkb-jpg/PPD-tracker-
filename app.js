@@ -554,11 +554,18 @@
       '<rect x="' + (c.lx - w / 2) + '" y="' + (c.ly - 9) + '" width="' + w + '" height="15" rx="7.5" fill="#fff" stroke="#9aa39b" stroke-width="1"/>' +
       '<text x="' + c.lx + '" y="' + (c.ly + 1.5) + '" fill="var(--muted)">' + esc(txt) + "</text></g>";
   }
+  let mkmSelectedIndex = -1;   // which milestone is open (for the highlight ring)
+  function mkmSvgNode(p) {
+    const g = dashSvgNode(p);
+    if (p.idx !== mkmSelectedIndex) return g;
+    // Draw a blue ring around the open milestone so the flow doubles as a switcher.
+    return g.replace(/<\/g>$/, '<circle cx="' + p.x + '" cy="' + p.y + '" r="27" fill="none" stroke="#1f5fa8" stroke-width="2.5"/></g>');
+  }
   function mkmSvg() {
     deriveActuals();
     const paths = MKM_CONN.map(function (c) { return '<path d="' + c.d + '"/>'; }).join("");
     const pills = MKM_CONN.map(mkmDurPill).join("");
-    const nodes = MKM_NODES.map(dashSvgNode).join("");
+    const nodes = MKM_NODES.map(mkmSvgNode).join("");
     return '<svg viewBox="0 0 862 170" width="862" height="170" role="img" style="display:block;margin:0 auto;max-width:100%" font-family="var(--font-sans)">' +
       '<defs><marker id="mkmah" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#9aa39b"/></marker></defs>' +
       '<g fill="none" stroke="#9aa39b" stroke-width="2" marker-end="url(#mkmah)">' + paths + "</g>" +
@@ -664,6 +671,7 @@
     if (!masterBody) return;
     ensureStepDetailHome();
     stepDetail.hidden = true;
+    mkmSelectedIndex = -1;   // no milestone open on a fresh page load
     pagePlaceholder.hidden = true;
     if (projectDashboard) projectDashboard.hidden = true;
     if (timelineWrap) timelineWrap.hidden = true;
@@ -707,9 +715,11 @@
     const overview = masterBody.querySelector("#mkmOverview");
     if (!host) return;
     selectedStepIndex = index;
+    mkmSelectedIndex = index;
+    renderMkmFlow(masterBody);       // redraw the (always-visible) flow with the ring
     fillStepHeader(index);
-    host.appendChild(stepDetail);   // borrow the shared step block
-    if (overview) overview.hidden = true;
+    host.appendChild(stepDetail);    // borrow the shared step block
+    if (overview) overview.hidden = true;   // free the space; the flow stays on top
     host.hidden = false;
     stepDetail.hidden = false;
     loadStepBody(index);
@@ -722,6 +732,8 @@
     if (host) host.hidden = true;
     if (overview) overview.hidden = false;
     selectedStepIndex = -1;
+    mkmSelectedIndex = -1;
+    renderMkmFlow(masterBody);       // clear the ring
   }
 
   if (masterBody) {

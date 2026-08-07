@@ -19,16 +19,25 @@
     <span class="st-chip st-in-progress">In Progress</span>
   </div>
 
-  <!-- ===== OVERVIEW (hidden while a milestone step is open) ===== -->
-  <div id="mkmOverview">
-
-  <!-- ---------- KM milestone flow (rendered by app.js renderMkmFlow) ---------- -->
+  <!-- ---------- KM milestone flow (ALWAYS on top; acts as the step switcher) ---------- -->
   <section class="pc-card">
     <h4 class="pc-card-title">KM Milestone Flow</h4>
-    <div class="pc-hint" style="margin-top:0;margin-bottom:10px">Click a project above; this line shows its KM path from Design Approval to KM Approval.</div>
+    <div class="pc-hint" style="margin-top:0;margin-bottom:10px">Click a milestone to open it below. Click another to switch steps.</div>
     <div style="overflow-x:auto" data-mkm-lane><!-- SVG flowchart injected here --></div>
     <div data-mkm-legend style="margin-top:8px"><!-- legend injected here --></div>
   </section>
+
+  <!-- ===== STEP HOST — the open milestone's working page appears right here ===== -->
+  <div id="mkmStepHost" hidden>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:4px">
+      <button type="button" data-mkm-back title="Close step" aria-label="Close step"
+        style="border:none;background:none;cursor:pointer;font-size:22px;line-height:1;color:var(--muted);padding:2px 8px">✕</button>
+    </div>
+    <!-- app.js relocates the shared #stepDetail block in here -->
+  </div>
+
+  <!-- ===== OVERVIEW (hidden while a milestone step is open) ===== -->
+  <div id="mkmOverview">
 
   <!-- ---------- Section 1: KM status overview ---------- -->
   <section class="pc-card">
@@ -223,11 +232,5 @@
   </section>
 
   </div><!-- /#mkmOverview -->
-
-  <!-- ===== STEP HOST — a milestone's working page opens here, inside MKM ===== -->
-  <div id="mkmStepHost" hidden>
-    <button type="button" class="upload-btn" data-mkm-back style="margin-bottom:12px">← Back to Master KM</button>
-    <!-- app.js relocates the shared #stepDetail block in here -->
-  </div>
 
 </div>
