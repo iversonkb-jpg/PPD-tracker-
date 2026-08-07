@@ -19,6 +19,9 @@
     <span class="st-chip st-in-progress">In Progress</span>
   </div>
 
+  <!-- ===== OVERVIEW (hidden while a milestone step is open) ===== -->
+  <div id="mkmOverview">
+
   <!-- ---------- KM milestone flow (rendered by app.js renderMkmFlow) ---------- -->
   <section class="pc-card">
     <h4 class="pc-card-title">KM Milestone Flow</h4>
@@ -218,5 +221,13 @@
     Authority applicability can differ per project — always confirm against the project-level
     KM clearance board before submission.</p>
   </section>
+
+  </div><!-- /#mkmOverview -->
+
+  <!-- ===== STEP HOST — a milestone's working page opens here, inside MKM ===== -->
+  <div id="mkmStepHost" hidden>
+    <button type="button" class="upload-btn" data-mkm-back style="margin-bottom:12px">← Back to Master KM</button>
+    <!-- app.js relocates the shared #stepDetail block in here -->
+  </div>
 
 </div>

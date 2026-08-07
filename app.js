@@ -599,6 +599,8 @@
   function showDashboard() {
     if (!activeSteps.length) return;
     selectedStepIndex = -1;
+    ensureStepDetailHome();             // reclaim #stepDetail if MKM borrowed it
+    if (masterBody) masterBody.hidden = true;
     pagePlaceholder.hidden = true;
     stepDetail.hidden = true;
     timelineWrap.hidden = true;         // no step liner on the dashboard page
@@ -636,7 +638,7 @@
     const title = document.getElementById("phDashboard");
     if (title) { title.style.cursor = "pointer"; title.addEventListener("click", function () { if (activeSteps.length) showDashboard(); }); }
     const pill = document.getElementById("pillDashboard");
-    if (pill) pill.addEventListener("click", function () { if (activeSteps.length) showDashboard(); });
+    if (pill) pill.addEventListener("click", function () { setActivePill(pill); if (activeSteps.length) showDashboard(); });
   })();
 
   /* ---------- Master body pages (Master KM, Master Infra) ----------
@@ -645,13 +647,27 @@
      edit separate files and never collide. Fetched fresh (no cache)
      so edits show on refresh. */
   const masterBody = document.getElementById("masterBody");
+  const stepDetailHome = stepDetail.parentNode;   // <main> — where #stepDetail normally lives
 
-  function showMasterBody(url) {
+  // #stepDetail is a single shared element. The Master KM page borrows it —
+  // moving it into #mkmStepHost so a step opens "inside" MKM — and this returns
+  // it to its home in <main> for the KM/BP dashboard + timeline to use.
+  function ensureStepDetailHome() {
+    if (stepDetail.parentNode !== stepDetailHome) stepDetailHome.appendChild(stepDetail);
+  }
+  function setActivePill(el) {
+    document.querySelectorAll(".sub-tabs .pill").forEach(function (p) { p.classList.remove("active"); });
+    if (el) el.classList.add("active");
+  }
+
+  function showMasterBody(url, pill) {
     if (!masterBody) return;
-    pagePlaceholder.hidden = true;
+    ensureStepDetailHome();
     stepDetail.hidden = true;
+    pagePlaceholder.hidden = true;
     if (projectDashboard) projectDashboard.hidden = true;
     if (timelineWrap) timelineWrap.hidden = true;
+    if (pill) setActivePill(pill);
     masterBody.hidden = false;
     masterBody.innerHTML = '<p class="sd-loading">Loading…</p>';
     fetch(url, { cache: "no-store" })
@@ -662,19 +678,58 @@
 
   (function wireMasterPills() {
     const km = document.getElementById("pillMasterKm");
-    if (km) km.addEventListener("click", function () { showMasterBody(CONTENT_BASE + "master-km.html"); });
+    if (km) km.addEventListener("click", function () { showMasterBody(CONTENT_BASE + "master-km.html", km); });
     const infra = document.getElementById("pillMasterInfra");
-    if (infra) infra.addEventListener("click", function () { showMasterBody(CONTENT_BASE + "master-infra.html"); });
+    if (infra) infra.addEventListener("click", function () { showMasterBody(CONTENT_BASE + "master-infra.html", infra); });
   })();
 
-  // Clicking a milestone node on a master page opens that step's working page,
-  // exactly like the dashboard flowchart does.
+  // Fill the shared #stepDetail header (badge / index / name / status chip).
+  function fillStepHeader(index) {
+    const s = activeSteps[index] || {};
+    const status = s.status || "upcoming";
+    const badge = document.getElementById("sdBadge");
+    badge.textContent = index + 1;
+    badge.className = "sd-badge " + stepStateClass(activeSteps, index);
+    document.getElementById("sdIndex").textContent = index + 1;
+    document.getElementById("sdTotal").textContent = STEP_NAMES.length;
+    document.getElementById("sdName").textContent = STEP_NAMES[index];
+    const chip = document.getElementById("sdChip");
+    chip.textContent = STATUS_LABEL[status] || "Upcoming";
+    chip.className = "sd-chip " + status;
+  }
+
+  // Open a step's working page INSIDE the Master KM page (not the KM/BP view):
+  // the shared #stepDetail block is relocated into #mkmStepHost, the overview is
+  // hidden, and the Back control (below) returns to the milestone flow.
+  function openMkmStep(index) {
+    if (!activeSteps.length || !STEP_NAMES[index]) return;
+    const host = masterBody.querySelector("#mkmStepHost");
+    const overview = masterBody.querySelector("#mkmOverview");
+    if (!host) return;
+    selectedStepIndex = index;
+    fillStepHeader(index);
+    host.appendChild(stepDetail);   // borrow the shared step block
+    if (overview) overview.hidden = true;
+    host.hidden = false;
+    stepDetail.hidden = false;
+    loadStepBody(index);
+  }
+  function closeMkmStep() {
+    stepDetail.hidden = true;
+    ensureStepDetailHome();
+    const host = masterBody.querySelector("#mkmStepHost");
+    const overview = masterBody.querySelector("#mkmOverview");
+    if (host) host.hidden = true;
+    if (overview) overview.hidden = false;
+    selectedStepIndex = -1;
+  }
+
   if (masterBody) {
     masterBody.addEventListener("click", function (e) {
+      if (e.target.closest("[data-mkm-back]")) { closeMkmStep(); return; }
       const node = e.target.closest(".dash-svg-node[data-dash-step]");
       if (!node || !activeSteps.length) return;
-      masterBody.hidden = true;
-      selectStep(Number(node.getAttribute("data-dash-step")));
+      openMkmStep(Number(node.getAttribute("data-dash-step")));
     });
   }
 
@@ -686,6 +741,8 @@
   // to the timeline is a jarring jump. Pass { scrollToStep: false } there.
   function selectStep(index, opts) {
     if (!activeSteps.length || !STEP_NAMES[index]) return;
+    ensureStepDetailHome();             // reclaim #stepDetail if MKM borrowed it
+    if (masterBody) masterBody.hidden = true;
     selectedStepIndex = index;
     const scrollToStep = !opts || opts.scrollToStep !== false;
 
