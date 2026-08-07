@@ -559,7 +559,7 @@
     const paths = MKM_CONN.map(function (c) { return '<path d="' + c.d + '"/>'; }).join("");
     const pills = MKM_CONN.map(mkmDurPill).join("");
     const nodes = MKM_NODES.map(dashSvgNode).join("");
-    return '<svg viewBox="0 0 862 170" width="862" height="170" role="img" font-family="var(--font-sans)">' +
+    return '<svg viewBox="0 0 862 170" width="862" height="170" role="img" style="display:block;margin:0 auto;max-width:100%" font-family="var(--font-sans)">' +
       '<defs><marker id="mkmah" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#9aa39b"/></marker></defs>' +
       '<g fill="none" stroke="#9aa39b" stroke-width="2" marker-end="url(#mkmah)">' + paths + "</g>" +
       pills + nodes + "</svg>";
@@ -666,6 +666,17 @@
     const infra = document.getElementById("pillMasterInfra");
     if (infra) infra.addEventListener("click", function () { showMasterBody(CONTENT_BASE + "master-infra.html"); });
   })();
+
+  // Clicking a milestone node on a master page opens that step's working page,
+  // exactly like the dashboard flowchart does.
+  if (masterBody) {
+    masterBody.addEventListener("click", function (e) {
+      const node = e.target.closest(".dash-svg-node[data-dash-step]");
+      if (!node || !activeSteps.length) return;
+      masterBody.hidden = true;
+      selectStep(Number(node.getAttribute("data-dash-step")));
+    });
+  }
 
   /* ---------- Step selection + content fetch ---------- */
   // opts.scrollToStep (default true): whether to scroll the timeline node
