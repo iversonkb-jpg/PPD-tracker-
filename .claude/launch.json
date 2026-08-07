@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "tracker",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5502"],
+      "port": 5502,
+      "autoPort": false
+    }
+  ]
+}

@@ -1,0 +1,147 @@
+<!-- Step 02 — Pre-Consultation & Upload Doc -->
+
+<!-- Folder tabs -->
+<div class="step-tabs">
+  <button type="button" class="step-tab active" data-tab="pre">Pre-Consultation <span class="tab-dot" data-tab-dot="pre" title="Not Started"></span></button>
+  <button type="button" class="step-tab" data-tab="general">Upload (General) <span class="tab-dot" data-tab-dot="general" title="Not Started"></span></button>
+  <button type="button" class="step-tab" data-tab="km">Upload (KM Checklist) <span class="tab-dot" data-tab-dot="km" title="Not Started"></span></button>
+  <button type="button" class="step-tab" data-tab="bp">Upload (BP Checklist) <span class="tab-dot" data-tab-dot="bp" title="Not Started"></span></button>
+</div>
+
+<!-- Tab panels -->
+<div class="step-tabpanels">
+
+  <!-- 1) Pre-Consultation -->
+  <div class="step-tabpanel active" data-panel="pre">
+    <div class="pc-layout" id="pcRoot">
+
+      <!-- Left: sticky agency status board (populated by app.js) -->
+      <aside class="pc-side">
+        <div class="pc-side-title-row">
+          <div class="pc-side-title">Authority &amp; Agency Status</div>
+          <button type="button" class="icon-btn" data-pc-settings title="PPD Agency Setting" aria-label="Agency settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="pc-group-title">Internal Agency</div>
+        <div class="agency-grid" id="pcInternal"></div>
+
+        <div class="pc-group-title">External Agency</div>
+        <div class="agency-grid" id="pcExternal"></div>
+
+        <div class="pc-legend">
+          <div class="pc-group-title">Status Legend</div>
+          <div class="legend-grid">
+            <span class="legend-item"><span class="legend-dot ld-delayed"></span>Delayed</span>
+            <span class="legend-item"><span class="legend-dot ld-alarming"></span>Alarming</span>
+            <span class="legend-item"><span class="legend-dot ld-in-progress"></span>In Progress</span>
+            <span class="legend-item"><span class="legend-dot ld-completed"></span>Completed</span>
+            <span class="legend-item"><span class="legend-dot ld-na"></span>Not Applicable</span>
+            <span class="legend-item"><span class="legend-dot ld-not-started"></span>Not Started</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right: workflow for the selected authority -->
+      <div class="pc-main">
+
+        <div class="agency-na-note" data-pc-na-note hidden>This agency is marked Not Applicable.</div>
+
+        <!-- Section 1: Pre-Consultation -->
+        <section class="pc-card">
+          <div class="pc-head-card">
+            <div class="pc-authority">Authority: <strong id="pcAuthority">JKB</strong></div>
+            <span class="st-chip" id="pcStatusPill">In Progress</span>
+          </div>
+          <h4 class="pc-card-title" style="margin-top:14px">Pre-Consultation</h4>
+
+          <div class="pc-q">
+            <div class="pc-q-label">2.1 Date of pre-consultation (by Consultant)</div>
+            <div class="pc-inline" data-send-group="preDate">
+              <input type="date" class="sd-input pc-date" data-pc-field="preDate" aria-label="Pre-consultation date">
+              <button type="button" class="send-btn" data-send hidden aria-label="Send">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+              </button>
+              <span class="saved-stamp" data-send-stamp hidden></span>
+            </div>
+          </div>
+
+          <div class="pc-q">
+            <div class="pc-q-label">2.2 Consultant to upload pre-consultation comments/notes, if any</div>
+            <label class="pc-check"><input type="checkbox" data-pc-require="preDoc"> Require</label>
+            <div class="pc-inline" data-send-group="preDoc" data-pc-requireable hidden>
+              <span data-pc-doc="preDoc"><!-- upload button or file chip, rendered per agency by app.js --></span>
+              <button type="button" class="send-btn" data-send hidden aria-label="Send">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+              </button>
+              <span class="saved-stamp" data-send-stamp hidden></span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 2: Meeting & Review -->
+        <section class="pc-card">
+          <h4 class="pc-card-title">Meeting &amp; Review</h4>
+
+          <div class="pc-q">
+            <div class="pc-q-label">2.3 Consultant to upload meeting note/sketch (if meeting with PPD)</div>
+            <div class="pc-inline" data-send-group="meetingNote">
+              <span data-pc-doc="meetingNote"><!-- upload button or file chip, rendered per agency by app.js --></span>
+              <button type="button" class="send-btn" data-send hidden aria-label="Send">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+              </button>
+              <span class="saved-stamp" data-send-stamp hidden></span>
+            </div>
+          </div>
+
+          <div class="pc-q">
+            <div class="pc-q-label">2.4 PPD to set date for Consultant to upload revised drawings for review</div>
+            <div class="pc-inline" data-send-group="reviewDate">
+              <input type="date" class="sd-input pc-date" data-pc-field="reviewDate" aria-label="Revised drawings review date">
+              <button type="button" class="send-btn" data-send hidden aria-label="Send">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+              </button>
+              <span class="saved-stamp" data-send-stamp hidden></span>
+            </div>
+            <div class="pc-hint">System will notify Consultant in their task list.</div>
+          </div>
+        </section>
+
+        <!-- Section 3: Submission-->
+        <section class="pc-card">
+          <h4 class="pc-card-title">Submission</h4>
+          <div class="pc-hint" style="margin-top:0;margin-bottom:4px">Consultant to upload submission doc/drawings:</div>
+          <div id="pcRounds"><!-- rounds rendered by app.js --></div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 2) Upload (General) -->
+  <div class="step-tabpanel" data-panel="general">
+    <div class="sd-field-hint" style="margin-bottom:14px">Drag &amp; drop a file onto an item, or use its Upload Document button, then send to save it in the system.</div>
+    <div class="gen-grid" id="genDocs"><!-- document items rendered by app.js --></div>
+    <button type="button" class="gen-add-row" data-gen-add>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+      Add more items
+    </button>
+  </div>
+
+  <!-- 3) Upload (KM Checklist) -->
+  <div class="step-tabpanel" data-panel="km">
+    <div class="sd-field-hint" style="margin-bottom:14px">Upload &amp; send each authority/agency document required for the Kebenaran Merancang (KM) checklist.</div>
+    <div class="km-checklist" id="kmChecklist"><!-- sections rendered by app.js --></div>
+  </div>
+
+  <!-- 4) Upload (BP Checklist) -->
+  <div class="step-tabpanel" data-panel="bp">
+    <div class="sd-field-hint" style="margin-bottom:14px">Upload &amp; send each authority/agency document required for the Building Plan (BP) checklist.</div>
+    <div class="km-checklist" id="bpChecklist"><!-- sections rendered by app.js --></div>
+  </div>
+
+</div>

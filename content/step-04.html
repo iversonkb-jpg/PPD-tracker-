@@ -1,0 +1,97 @@
+<!-- Step 04 — Hardcopy Submission -->
+<div class="pc-main" id="hcRoot">
+
+  <!-- Section 1: Hardcopy Signing & Consent (4.1-4.3) -->
+  <section class="pc-card">
+    <h4 class="pc-card-title">Hardcopy Signing &amp; Consent</h4>
+
+    <div class="pc-q">
+      <div class="pc-q-label">4.1 PPD to set the date for hardcopies signing by Director/CDO</div>
+      <div class="pc-hint" style="margin-top:0;margin-bottom:9px">Guide: within 2 weeks after online submission.</div>
+      <div class="kb-row" style="margin-top:0">
+        <div class="kb-label">KM</div>
+        <input type="date" class="sd-input kb-date" data-hc-date="q1.km" aria-label="KM hardcopy signing date">
+        <div data-hc-send-wrap="q1.km"></div>
+      </div>
+      <div class="kb-row">
+        <div class="kb-label">BP</div>
+        <input type="date" class="sd-input kb-date" data-hc-date="q1.bp" aria-label="BP hardcopy signing date">
+        <div data-hc-send-wrap="q1.bp"></div>
+      </div>
+      <div class="pc-hint">Note: Reminder will be sent the date is 1 week away from today.</div>
+    </div>
+
+    <div class="pc-q">
+      <div class="pc-q-label">4.2 Consultants to update Authority Consent to submit hardcopy</div>
+      <div class="kb-row" style="margin-top:0">
+        <input type="date" class="sd-input kb-date" data-hc-date="q2" aria-label="Authority consent date">
+        <div data-hc-send-wrap="q2"></div>
+      </div>
+    </div>
+
+    <div class="pc-q">
+      <div class="pc-q-label">4.3 Consultant to upload QR code</div>
+      <div class="pc-hint" style="margin-top:0;margin-bottom:9px">System links to the Payment Requisition flow to generate the notification letter template.</div>
+      <div class="kb-row hc-doc-row" style="margin-top:0" data-hc-drop="q3.km">
+        <div class="kb-label">KM</div>
+        <div class="kb-upload-wrap" data-hc-doc="q3.km"></div>
+        <div data-hc-send-wrap="q3.km"></div>
+      </div>
+      <div class="kb-row hc-doc-row" data-hc-drop="q3.bp">
+        <div class="kb-label">BP</div>
+        <div class="kb-upload-wrap" data-hc-doc="q3.bp"></div>
+        <div data-hc-send-wrap="q3.bp"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: Payment Requisition (4.4) -->
+  <section class="pc-card">
+    <h4 class="pc-card-title">Payment Requisition</h4>
+    <div class="pc-q" style="margin-top:0">
+      <div class="pc-q-label">4.4 Raise PRF</div>
+      <!-- Placeholder — not wired to any functionality yet -->
+      <button type="button" class="upload-btn" title="Coming soon">View PRF</button>
+    </div>
+  </section>
+
+  <!-- Section 3: Receipt & Submission (4.5-4.6) -->
+  <section class="pc-card">
+    <h4 class="pc-card-title">Receipt &amp; Submission</h4>
+
+    <div class="pc-q" style="margin-top:0">
+      <div class="pc-q-label">4.5 Consultant to upload official receipt issued by OSC</div>
+      <div class="kb-row hc-doc-row" style="margin-top:0" data-hc-drop="q5.km">
+        <div class="kb-label">KM</div>
+        <div class="kb-upload-wrap" data-hc-doc="q5.km"></div>
+        <input type="date" class="sd-input kb-date" data-hc-date="q5.km" aria-label="KM official receipt date">
+        <div data-hc-send-wrap="q5.km"></div>
+      </div>
+      <div class="kb-row hc-doc-row" data-hc-drop="q5.bp">
+        <div class="kb-label">BP</div>
+        <div class="kb-upload-wrap" data-hc-doc="q5.bp"></div>
+        <input type="date" class="sd-input kb-date" data-hc-date="q5.bp" aria-label="BP official receipt date">
+        <div data-hc-send-wrap="q5.bp"></div>
+      </div>
+    </div>
+
+    <div class="pc-q">
+      <div class="pc-q-label">4.6 Consultant to upload acknowledged copy of KM &amp; BP submission and submitted hardcopy doc/drawings</div>
+      <div class="kb-row hc-doc-row" style="margin-top:0" data-hc-drop="q6.km">
+        <div class="kb-label">KM</div>
+        <div class="kb-upload-wrap" data-hc-doc="q6.km"></div>
+        <input type="date" class="sd-input kb-date" data-hc-date="q6.km" aria-label="KM acknowledged copy date">
+        <div data-hc-send-wrap="q6.km"></div>
+      </div>
+      <div class="kb-row hc-doc-row" data-hc-drop="q6.bp">
+        <div class="kb-label">BP</div>
+        <div class="kb-upload-wrap" data-hc-doc="q6.bp"></div>
+        <input type="date" class="sd-input kb-date" data-hc-date="q6.bp" aria-label="BP acknowledged copy date">
+        <div data-hc-send-wrap="q6.bp"></div>
+      </div>
+    </div>
+
+    <p class="sd-note">Once 4.2, 4.3 and 4.4 are done, the system notifies/reminds Consultants to submit hardcopy.</p>
+  </section>
+
+</div>

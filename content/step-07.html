@@ -1,0 +1,89 @@
+<!-- Step 07 — KM Approval Endorsement -->
+<div class="pc-main" id="endorseRoot">
+
+  <p class="pc-hint-green" style="margin-top:0">When clearance obtained from all the authorities depts, System reflected green color in dot-dashboard, System notify Consultant to ready with the endorsement set.</p>
+
+  <!-- 7.1 Target Dates -->
+  <section class="pc-card">
+    <h4 class="pc-card-title" style="margin-top:0">7.1 Target Dates, PPD to set date</h4>
+
+    <div class="pc-q" style="margin-top:0">
+      <div class="pc-q-label">7.1.1 Target Date for Consultant to Upload Drawings for PPD Review</div>
+      <div class="pc-inline">
+        <input type="date" class="sd-input pc-date" data-endorse-date="t1" aria-label="Target date for consultant to upload drawings for PPD review">
+        <div data-endorse-send-wrap="t1"></div>
+      </div>
+    </div>
+
+    <div class="pc-q">
+      <div class="pc-q-label">7.1.2 Target Date for Director/CDO to sign off drawing for KM Submission</div>
+      <div class="pc-inline">
+        <input type="date" class="sd-input pc-date" data-endorse-date="t2" aria-label="Target date for Director/CDO to sign off drawing for KM submission">
+        <div data-endorse-send-wrap="t2"></div>
+      </div>
+    </div>
+
+    <div class="pc-q">
+      <div class="pc-q-label">7.1.3 Target Date for KM Hardcopy Submission</div>
+      <div class="pc-inline">
+        <input type="date" class="sd-input pc-date" data-endorse-date="t3" aria-label="Target date for KM hardcopy submission">
+        <div data-endorse-send-wrap="t3"></div>
+      </div>
+    </div>
+
+    <p class="pc-hint-green">(System notify Consultant on these 3 dates)</p>
+  </section>
+
+  <!-- 7.2 / 7.2.1 Submission for approval endorsement set -->
+  <section class="pc-card">
+    <div class="pc-q" style="margin-top:0">
+      <div class="pc-q-label">7.2 Consultant to upload the drawings for approval endorsement set submission</div>
+      <div id="endorseRounds"><!-- rounds rendered by app.js --></div>
+      <p class="pc-hint-green">(System notify PPD to check)</p>
+    </div>
+
+    <div class="pc-q">
+      <div class="pc-q-label">7.2.1 PPD to review/approve drawings for approval endorsement set</div>
+      <p class="pc-hint-green">Note: Notify respective Consultants after action.</p>
+    </div>
+  </section>
+
+  <!-- 7.3 Acknowledged copy -->
+  <section class="pc-card">
+    <div class="pc-q" style="margin-top:0">
+      <div class="pc-q-label">7.3 Consultant uploads acknowledged copy and doc submitted</div>
+      <div class="kb-row hc-doc-row" style="margin-top:0" data-endorse-drop="ack">
+        <div class="kb-upload-wrap" data-endorse-doc="ack"></div>
+        <input type="date" class="sd-input kb-date" data-endorse-date="ack" aria-label="Date of acknowledged copy submission">
+        <div data-endorse-send-wrap="ack"></div>
+      </div>
+      <p class="pc-hint-green">System notify PPD and changed color in dot Dashboard</p>
+    </div>
+  </section>
+
+  <!-- 7.4 / 7.4.1 Approval letter -->
+  <section class="pc-card">
+    <div class="pc-q" style="margin-top:0">
+      <div class="pc-q-label">7.4 When obtained KM Approval Endorsed Letter and Drawings, consultant to upload approval letter.</div>
+      <div class="kb-row hc-doc-row" style="margin-top:0" data-endorse-drop="letter">
+        <div class="kb-upload-wrap" data-endorse-doc="letter"></div>
+        <input type="date" class="sd-input kb-date" data-endorse-date="letter" aria-label="Date of approval letter upload">
+        <input type="text" class="sd-input" style="max-width:200px" data-endorse-refno placeholder="Authority Letter Ref No." aria-label="Authority letter reference number">
+        <div data-endorse-send-wrap="letter"></div>
+      </div>
+      <p class="pc-hint-green">Consultant to key in Authority Letter Ref No:</p>
+    </div>
+
+    <div class="pc-q">
+      <div class="pc-q-label">7.4.1 PPD to verify the correct uploaded doc and if any new condition imposed</div>
+      <div data-endorse-letter-decide-wrap></div>
+    </div>
+
+    <p class="sd-note-danger">
+      Note:<br>
+      If PPD verified the approval, System notify and email the approval letter and drawings to SA-PIC and S&amp;M-PIC for further action. (Bank Impairement)<br>
+      If rejected, System auto-send to Consultant (Task List &amp; Email) to re-upload the correct doc. Repeat v) and vi) until PPD verified.
+    </p>
+  </section>
+
+</div>

@@ -1,0 +1,80 @@
+<!-- Step 11 — AP Approval -->
+<div class="pc-main" id="ap11Root">
+
+  <!-- a. Forward geran/QT land title -->
+  <section class="pc-card">
+    <div class="pc-q" style="margin-top:0">
+      <div class="pc-q-label">11.1 PPD to forward geran/QT land title to S&amp;M for DL application</div>
+      <p class="pc-hint">System auto-send geran/QT and title link to S&amp;M to download</p>
+      <div class="kb-row" style="margin-top:8px">
+        <div class="kb-upload-wrap hc-doc-row" data-ap-drop="geran"><!-- rendered by app.js --></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- b. Upload doc/dwgs for AP online submission -->
+  <section class="pc-card">
+    <div class="pc-q ap-split" style="margin-top:0">
+      <div class="ap-split-main">
+        <div class="pc-q-label">11.2 PPD to upload the doc/dwgs required to sharepoint folder, S&amp;M to submit advertisement permit (AP) online</div>
+        <p class="pc-hint">(System notify S&amp;M to get the doc/dwgs required for AP submission)</p>
+        <div class="kb-row" style="margin-top:8px">
+          <div class="kb-upload-wrap hc-doc-row" data-ap-drop="bPdf"><!-- rendered by app.js --></div>
+          <div class="kb-upload-wrap hc-doc-row" data-ap-drop="bCad"><!-- rendered by app.js --></div>
+        </div>
+        <p class="pc-hint">System auto-saves the uploaded date</p>
+      </div>
+      <aside class="ap-reminder">System send reminder to S&amp;M for AP online submission, 4 weeks and 2 weeks before the target submission date</aside>
+    </div>
+  </section>
+
+  <!-- Submission Checklist -->
+  <section class="pc-card">
+    <div class="ap-cl-bar">
+      <div class="ap-cl-title">Submission Checklist:</div>
+      <button type="button" class="ap-add" data-ap-add>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+        Add items
+      </button>
+    </div>
+    <div class="ap-cl-colhead"><span>Documents</span><span>Status</span></div>
+    <!-- Read-only: mirror earlier approval steps -->
+    <div class="ap-cl" id="ap11TopList"><!-- rendered by app.js --></div>
+    <!-- Interactive: click a dot to toggle, "+ Add items" appends here -->
+    <div class="ap-cl" id="ap11BottomList"><!-- rendered by app.js --></div>
+  </section>
+
+  <!-- c. Upload SPA set + 4th schedule -->
+  <section class="pc-card">
+    <div class="pc-q ap-split" style="margin-top:0">
+      <div class="ap-split-main">
+        <div class="pc-q-label">11.3 PPD to upload the SPA set and 4th schedule to sharepoint folder</div>
+        <div class="kb-row" style="margin-top:8px">
+          <div class="kb-upload-wrap hc-doc-row" data-ap-drop="cPdf"><!-- rendered by app.js --></div>
+          <div class="kb-upload-wrap hc-doc-row" data-ap-drop="cCad"><!-- rendered by app.js --></div>
+        </div>
+        <p class="pc-hint">System auto-saves the uploaded date</p>
+      </div>
+      <aside class="ap-reminder">System send reminder to S&amp;M and Finance for AP approval, 4 weeks and 2 weeks before the target submission date</aside>
+    </div>
+
+    <p class="sd-note-danger">
+      Note:<br>
+      If no comments from KPKT, S&amp;M notify Finance Dept to open Housing Developer's Account (HDA),
+      and apply for BG and make payment for AP approval.<br>
+      (System to notify PPD via task-list on the status, if possible)
+    </p>
+  </section>
+
+  <!-- d. Upload AP approval -->
+  <section class="pc-card">
+    <div class="pc-q" style="margin-top:0">
+      <div class="pc-q-label">11.4 S&amp;M to upload AP approval in the sharepoint folder</div>
+      <p class="pc-hint">(System detected and notify PPD)</p>
+      <div class="kb-row" style="margin-top:8px">
+        <div class="kb-upload-wrap hc-doc-row" data-ap-drop="approval"><!-- rendered by app.js --></div>
+      </div>
+    </div>
+  </section>
+
+</div>

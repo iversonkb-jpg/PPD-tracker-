@@ -1,0 +1,31 @@
+<!-- Step 01 — Design Approval & Briefing -->
+
+<!-- 1.1 Base Plan -->
+<div class="sd-field">
+  <div class="sd-field-title">1.1 Base Plan (approved by Mgmt)</div>
+  <div class="linked-box">
+    <a href="#">Link to approved base plan (auto-linked from Product Planning Flow)</a>
+    <span class="lb-date" data-base-plan>—</span>
+  </div>
+</div>
+
+<!-- 1.2 PPD to brief consultant -->
+<div class="sd-field">
+  <div class="sd-field-title"><span class="sd-req">**</span>1.2 PPD to brief Consultant on submission timeline &amp; design brief</div>
+  <div class="sd-field-hint">Briefing date must be within 1 week from management approval.</div>
+
+  <div class="sd-input-row">
+    <input type="date" class="sd-input" name="briefingDate" data-required aria-label="Briefing date">
+    <span class="saved-stamp" data-saved-stamp hidden></span>
+  </div>
+
+  <!-- Gated: revealed by app.js only once every data-required field is filled -->
+  <div class="sd-actions" data-gated hidden>
+    <button type="button" class="btn btn-primary" data-action="confirm">Confirm</button>
+    <button type="button" class="btn btn-secondary" data-action="cancel">Cancel</button>
+  </div>
+
+  <div class="sd-field-note">
+    Note: System will auto send an email meeting invitation to the consultants and PPD on the selected date.
+  </div>
+</div>

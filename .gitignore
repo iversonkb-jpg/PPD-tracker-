@@ -1,0 +1,8 @@
+# Local agent/tooling config — machine-specific, not part of the app.
+# .claude/launch.json IS tracked: it defines the dev server (port 5502).
+.agents/
+.claude/skills/
+skills-lock.json
+
+# Office lock files (created while a doc is open)
+~$*
