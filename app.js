@@ -582,6 +582,34 @@
     if (pill) pill.addEventListener("click", function () { if (activeSteps.length) showDashboard(); });
   })();
 
+  /* ---------- Master body pages (Master KM, Master Infra) ----------
+     Each pill loads its own content/master-*.html into #masterBody.
+     Content lives entirely in those files, so the KM and Infra teams
+     edit separate files and never collide. Fetched fresh (no cache)
+     so edits show on refresh. */
+  const masterBody = document.getElementById("masterBody");
+
+  function showMasterBody(url) {
+    if (!masterBody) return;
+    pagePlaceholder.hidden = true;
+    stepDetail.hidden = true;
+    if (projectDashboard) projectDashboard.hidden = true;
+    if (timelineWrap) timelineWrap.hidden = true;
+    masterBody.hidden = false;
+    masterBody.innerHTML = '<p class="sd-loading">Loading…</p>';
+    fetch(url, { cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+      .then(function (html) { masterBody.innerHTML = html; })
+      .catch(function () { masterBody.innerHTML = '<p class="sd-error">Couldn\'t load this page.</p>'; });
+  }
+
+  (function wireMasterPills() {
+    const km = document.getElementById("pillMasterKm");
+    if (km) km.addEventListener("click", function () { showMasterBody(CONTENT_BASE + "master-km.html"); });
+    const infra = document.getElementById("pillMasterInfra");
+    if (infra) infra.addEventListener("click", function () { showMasterBody(CONTENT_BASE + "master-infra.html"); });
+  })();
+
   /* ---------- Step selection + content fetch ---------- */
   // opts.scrollToStep (default true): whether to scroll the timeline node
   // into view. Manual clicks/keyboard nav on the timeline want this — the

@@ -79,9 +79,9 @@
 
     <!-- Row 3: Sub-tab pills (Authorities) -->
     <div class="sub-tabs">
-      <button class="pill">Master KM (MKM)</button>
+      <button class="pill" id="pillMasterKm">Master KM (MKM)</button>
       <button class="pill">Master Land Matters</button>
-      <button class="pill">Master Infra</button>
+      <button class="pill" id="pillMasterInfra">Master Infra</button>
       <button class="pill">Land Matters (QT &amp; FT)</button>
       <button class="pill active" id="pillDashboard">KM/BP AKM/ABP</button>
       <button class="pill">Sifus / A.Sifus COB / A.COB</button>
@@ -141,6 +141,9 @@
 
     <!-- Project dashboard: branched milestone flowchart (default view per project) -->
     <div class="step-detail" id="projectDashboard" hidden></div>
+
+    <!-- Master body pages (Master KM, Master Infra): content fetched from content/master-*.html -->
+    <div class="step-detail" id="masterBody" hidden></div>
 
     <!-- Step detail: fixed header (from data), body fetched from content/step-NN.html -->
     <div class="step-detail" id="stepDetail" hidden>
