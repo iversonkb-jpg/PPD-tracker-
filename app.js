@@ -521,6 +521,63 @@
       "</div>";
   }
 
+  /* ---------- Master KM (MKM) milestone flow ----------
+     A KM-only linear version of the dashboard flowchart: steps 1→7
+     (Design Approval → … → KM Clearance → KM Approval). The tail
+     (Sifus/COB/AP) sits downstream of BP Approval in the graph, so a
+     pure KM line ends at KM Approval. Reuses the dashboard's node
+     renderer (dashSvgNode) and legend, so styling/colours stay in sync.
+     durIdx indexes setDurations() (same source the dashboard pills use). */
+  const MKM_NODES = [
+    { idx: 0, x: 70,  y: 90, label: "Design Approval" },
+    { idx: 1, x: 190, y: 90, label: "Pre-consult" },
+    { idx: 2, x: 310, y: 90, label: "KM & BP Submission" },
+    { idx: 3, x: 430, y: 90, label: "Hardcopy" },
+    { idx: 4, x: 550, y: 90, label: "OSC Meeting" },
+    { idx: 5, x: 670, y: 90, label: "Clearance — KM" },
+    { idx: 6, x: 790, y: 90, label: "KM Approval" }
+  ];
+  const MKM_CONN = [
+    { d: "M92,90 L166,90",  durIdx: 0, lx: 129, ly: 78 },
+    { d: "M212,90 L286,90", durIdx: 1, lx: 249, ly: 78 },
+    { d: "M332,90 L406,90", durIdx: 2, lx: 369, ly: 78 },
+    { d: "M452,90 L526,90", durIdx: 3, lx: 489, ly: 78 },
+    { d: "M572,90 L646,90", durIdx: 4, lx: 609, ly: 78 },
+    { d: "M692,90 L766,90", durIdx: 6, lx: 729, ly: 78 }
+  ];
+  function mkmDurPill(c) {
+    const days = setDurations()[c.durIdx];
+    if (days == null || days === "") return "";
+    const txt = days + " days";
+    const w = txt.length * 5 + 12;
+    return '<g text-anchor="middle" font-size="9">' +
+      '<rect x="' + (c.lx - w / 2) + '" y="' + (c.ly - 9) + '" width="' + w + '" height="15" rx="7.5" fill="#fff" stroke="#9aa39b" stroke-width="1"/>' +
+      '<text x="' + c.lx + '" y="' + (c.ly + 1.5) + '" fill="var(--muted)">' + esc(txt) + "</text></g>";
+  }
+  function mkmSvg() {
+    deriveActuals();
+    const paths = MKM_CONN.map(function (c) { return '<path d="' + c.d + '"/>'; }).join("");
+    const pills = MKM_CONN.map(mkmDurPill).join("");
+    const nodes = MKM_NODES.map(dashSvgNode).join("");
+    return '<svg viewBox="0 0 862 170" width="862" height="170" role="img" font-family="var(--font-sans)">' +
+      '<defs><marker id="mkmah" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#9aa39b"/></marker></defs>' +
+      '<g fill="none" stroke="#9aa39b" stroke-width="2" marker-end="url(#mkmah)">' + paths + "</g>" +
+      pills + nodes + "</svg>";
+  }
+  // Fills the [data-mkm-lane] / [data-mkm-legend] hooks in content/master-km.html.
+  // Called by showMasterBody after that partial is injected.
+  function renderMkmFlow(container) {
+    const lane = container.querySelector("[data-mkm-lane]");
+    if (!lane) return;   // this partial has no flow hook (e.g. Master Infra)
+    if (!activeSteps.length) {
+      lane.innerHTML = '<p class="dash-hint">Select a project above to see its KM milestone flow.</p>';
+      return;
+    }
+    lane.innerHTML = mkmSvg();
+    const leg = container.querySelector("[data-mkm-legend]");
+    if (leg) leg.innerHTML = dashLegendHtml();
+  }
+
   // Fills the hooks in content/step-dashboard.html (must already be injected).
   function renderDashboard() {
     if (!activeSteps.length) return;
@@ -599,7 +656,7 @@
     masterBody.innerHTML = '<p class="sd-loading">Loading…</p>';
     fetch(url, { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
-      .then(function (html) { masterBody.innerHTML = html; })
+      .then(function (html) { masterBody.innerHTML = html; renderMkmFlow(masterBody); })
       .catch(function () { masterBody.innerHTML = '<p class="sd-error">Couldn\'t load this page.</p>'; });
   }
 
