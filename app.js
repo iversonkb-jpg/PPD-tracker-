@@ -531,7 +531,7 @@
   const MKM_NODES = [
     { idx: 0, x: 70,  y: 90, label: "Design Approval" },
     { idx: 1, x: 190, y: 90, label: "Pre-consult" },
-    { idx: 2, x: 310, y: 90, label: "KM & BP Submission" },
+    { idx: 2, x: 310, y: 90, label: "MKM Online Submission" },
     { idx: 3, x: 430, y: 90, label: "Hardcopy" },
     { idx: 4, x: 550, y: 90, label: "OSC Meeting" },
     { idx: 5, x: 670, y: 90, label: "Clearance — KM" },
@@ -592,7 +592,7 @@
   function mkmSave() {
     try {
       if (!activeSteps.length) return;
-      const data = { da: activeSteps[0] && activeSteps[0].da, s2: activeSteps[1] && activeSteps[1].s2 };
+      const data = { da: activeSteps[0] && activeSteps[0].da, s2: activeSteps[1] && activeSteps[1].s2, s3: activeSteps[2] && activeSteps[2].s3 };
       localStorage.setItem(mkmProjectKey(), JSON.stringify(data));
     } catch (e) { /* storage unavailable — ignore */ }
   }
@@ -603,6 +603,7 @@
       const data = JSON.parse(raw);
       if (data.da && activeSteps[0]) activeSteps[0].da = data.da;
       if (data.s2 && activeSteps[1]) activeSteps[1].s2 = data.s2;
+      if (data.s3 && activeSteps[2]) activeSteps[2].s3 = data.s3;
     } catch (e) { /* ignore */ }
   }
 
@@ -1036,6 +1037,55 @@
     renderStep2(selectedStepIndex);
   }
 
+  /* ---------- Master KM · Step 3 — MKM Online Submission (native, MKM-only) ----------
+     KM only (the BP row from the shared step is removed). State on activeSteps[2].s3. */
+  function seedStep3() { return { ackUploaded: false, date: "", confirmed: false, confirmedAt: "" }; }
+  function s3Html(s) {
+    const done = s.ackUploaded && s.confirmed;
+    let h = '<div class="pc-head-card" style="margin-bottom:14px">' +
+      '<div style="display:flex;gap:14px;align-items:center">' +
+        '<div class="sd-badge">3</div>' +
+        '<div><div class="sd-eyebrow">STEP 3 OF ' + MKM_NODES.length + "</div>" +
+        '<h3 style="margin:0;font-family:var(--font-serif);font-size:20px;color:var(--ink)">MKM Online Submission</h3></div>' +
+      "</div>" +
+      '<span class="st-chip ' + (done ? "st-completed" : "st-in-progress") + '">' + (done ? "Completed" : "In Progress") + "</span></div>";
+    h += '<section class="pc-card"><h4 class="pc-card-title">3.1 Online Submission Acknowledgement</h4>' +
+      '<div class="pc-hint" style="margin-top:0">Consultant to upload the screenshot of the online submission acknowledgement and set the actual online submission date.</div>' +
+      '<div class="da-item"><span>Screenshot of online submission acknowledgement</span>' +
+        (s.ackUploaded ? '<span class="da-stamp"><span class="da-dot"></span><b>Uploaded</b></span>'
+                       : '<button type="button" class="btn btn-secondary" style="padding:7px 16px;font-size:12.5px" data-s3="upload">Upload</button>') + "</div>" +
+      '<div class="pc-q"><div class="pc-q-label">Actual online submission date (KM)</div>' +
+        (s.confirmed
+          ? '<div class="da-field-row"><input type="date" class="sd-input pc-date" value="' + esc(s.date) + '" disabled><span class="da-stamp"><span class="da-dot"></span><b>Confirmed</b> <span class="da-time">' + esc(s.confirmedAt) + "</span></span></div>"
+          : '<div class="da-field-row"><input type="date" class="sd-input pc-date" id="s3-date"></div><div class="sd-actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-s3="confirm">Confirm</button><button type="button" class="btn btn-secondary" data-s3="cancel">Cancel</button></div>') +
+      "</div></section>";
+    h += '<section class="pc-card kb-pr-card"><button type="button" class="btn btn-primary" title="Coming soon" data-s3="raisePR">Raise PR</button></section>';
+    return h;
+  }
+  function renderStep3(index) {
+    const content = masterBody.querySelector("#mkmStepContent");
+    if (!content) return;
+    const step = activeSteps[index];
+    if (!step.s3) step.s3 = seedStep3();
+    content.innerHTML = s3Html(step.s3);
+    mkmSave();
+  }
+  function handleS3Click(el) {
+    const step = activeSteps[selectedStepIndex];
+    if (!step) return;
+    if (!step.s3) step.s3 = seedStep3();
+    const s = step.s3, act = el.getAttribute("data-s3");
+    if (act === "raisePR") return;   // placeholder
+    if (act === "cancel") { renderStep3(selectedStepIndex); return; }
+    if (act === "upload") { s.ackUploaded = !s.ackUploaded; }
+    else if (act === "confirm") {
+      const inp = document.getElementById("s3-date");
+      if (!inp || !inp.value) { alert("Please pick a date first."); return; }
+      s.date = inp.value; s.confirmed = true; s.confirmedAt = daNow();
+    }
+    renderStep3(selectedStepIndex);
+  }
+
   // Fills the hooks in content/step-dashboard.html (must already be injected).
   function renderDashboard() {
     if (!activeSteps.length) return;
@@ -1183,8 +1233,13 @@
       ensureStepDetailHome();
       stepDetail.hidden = true;
       renderStep2(index);
+    } else if (index === 2) {
+      // MKM Step 3 — native MKM Online Submission (MKM-only variant)
+      ensureStepDetailHome();
+      stepDetail.hidden = true;
+      renderStep3(index);
     } else {
-      // Steps 3–7 — reuse the shared step working page, hosted inside MKM
+      // Steps 4–7 — reuse the shared step working page, hosted inside MKM
       content.innerHTML = "";
       content.appendChild(stepDetail);   // borrow the shared step block
       fillStepHeader(index);
@@ -1214,6 +1269,8 @@
       if (da && da.tagName !== "INPUT") { handleDaClick(da); return; }   // radios handled on change
       const s2 = e.target.closest("[data-s2]");
       if (s2) { handleS2Click(s2); return; }
+      const s3 = e.target.closest("[data-s3]");
+      if (s3) { handleS3Click(s3); return; }
       const node = e.target.closest(".dash-svg-node[data-dash-step]");
       if (!node || !activeSteps.length) return;
       openMkmStep(Number(node.getAttribute("data-dash-step")));
