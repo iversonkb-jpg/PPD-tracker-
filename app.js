@@ -773,6 +773,7 @@
   // One agency's 2.1–2.6 workflow.
   function s2DefaultWorkflow() {
     return {
+      na: false,
       preConsults: [ { n: 1, date: "", confirmed: false, confirmedAt: "", noteUploaded: false } ],
       meetingNoteUploaded: false,
       reviewDate: { date: "", confirmed: false, confirmedAt: "" },
@@ -785,13 +786,25 @@
     if (!s.workflows[c]) s.workflows[c] = s2DefaultWorkflow();
     return s.workflows[c];
   }
+  // Resolve one of the 6 legend states for an agency:
+  // na · completed · delayed · alarming · in-progress · not-started
   function s2AgencyStatus(w) {
     if (!w) return "not-started";
+    if (w.na) return "na";
     if (w.submitted.drawingsUploaded && w.submitted.ackUploaded) return "completed";
+    // Date-driven signal from the 2.4 review due date (once set and not yet done).
+    if (w.reviewDate.confirmed && w.reviewDate.date) {
+      const due = new Date(w.reviewDate.date + "T00:00:00");
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const days = Math.round((due - today) / 86400000);
+      if (days < 0) return "delayed";
+      if (days <= 7) return "alarming";
+    }
     const started = w.preConsults.some(function (p) { return p.confirmed; }) || w.meetingNoteUploaded ||
       w.reviewDate.confirmed || w.reviewRounds.some(function (r) { return r.drawingsUploaded || r.ppdOutcome; });
     return started ? "in-progress" : "not-started";
   }
+  const S2_STATUS_LABEL = { "na": "Not Applicable", "completed": "Completed", "delayed": "Delayed", "alarming": "Alarming", "in-progress": "In Progress", "not-started": "Not Started" };
   function s2UploadItem(label, uploaded, action, i) {
     return '<div class="da-item"><span>' + esc(label) + "</span>" +
       (uploaded ? '<span class="da-stamp"><span class="da-dot"></span><b>Uploaded</b></span>'
@@ -867,9 +880,11 @@
     // ---- Pre-Consultation panel: sidebar + the selected agency's workflow ----
     const w = s2Workflow(s);
     const st = s2AgencyStatus(w);
-    const stLabel = st === "completed" ? "Completed" : st === "in-progress" ? "In Progress" : "Not Started";
     const authHead = '<section class="pc-card"><div class="pc-head-card"><div class="pc-authority">Authority: <strong>' + esc(s.selectedAgency) + "</strong></div>" +
-      '<span class="st-chip st-' + st + '">' + stLabel + "</span></div></section>";
+      '<div style="display:flex;gap:10px;align-items:center">' +
+        '<span class="st-chip st-' + st + '">' + (S2_STATUS_LABEL[st] || "Not Started") + "</span>" +
+        '<button type="button" class="btn btn-secondary" style="padding:6px 14px;font-size:12px" data-s2="toggleNA">' + (w.na ? "Mark Applicable" : "Mark Not Applicable") + "</button>" +
+      "</div></div></section>";
 
     const pcs = w.preConsults.map(function (p, i) {
       return '<div class="da-subcard' + (p.confirmed ? " da-ok" : "") + '">' +
@@ -914,9 +929,13 @@
       s2UploadItem("Submitted drawings / documents", w.submitted.drawingsUploaded, "submittedDraw", 0) +
       s2UploadItem("Acknowledgement (from authority)", w.submitted.ackUploaded, "submittedAck", 0) + "</section>";
 
+    const mainInner = w.na
+      ? authHead + '<section class="pc-card"><p class="sd-note">This agency is marked <b>Not Applicable</b>. Its pre-consultation and submission steps are skipped. Click “Mark Applicable” above to re-enable.</p></section>'
+      : authHead + preCard + reviewCard + submittedCard;
+
     h += '<div class="step-tabpanels">' +
       '<div class="step-tabpanel' + on("pre") + '" data-s2panel="pre">' +
-        '<div class="pc-layout">' + s2Sidebar(s) + '<div class="pc-main">' + authHead + preCard + reviewCard + submittedCard + "</div></div></div>" +
+        '<div class="pc-layout">' + s2Sidebar(s) + '<div class="pc-main">' + mainInner + "</div></div></div>" +
       '<div class="step-tabpanel' + on("general") + '" data-s2panel="general">' +
         '<div class="sd-field-hint" style="margin-bottom:14px">Upload &amp; send each general submission document.</div>' +
         s.general.map(function (g, i) { return s2UploadItem(g.title, g.uploaded, "genUpload", i); }).join("") + "</div>" +
@@ -977,7 +996,8 @@
       const inp = document.getElementById("s2-reviewdate");
       if (!inp || !inp.value) { alert("Please pick a date first."); return; }
       w.reviewDate.date = inp.value; w.reviewDate.confirmed = true; w.reviewDate.confirmedAt = daNow();
-    } else if (act === "meetingNote") { w.meetingNoteUploaded = !w.meetingNoteUploaded; }
+    } else if (act === "toggleNA") { w.na = !w.na; }
+    else if (act === "meetingNote") { w.meetingNoteUploaded = !w.meetingNoteUploaded; }
     else if (act === "pcNote") { w.preConsults[i].noteUploaded = !w.preConsults[i].noteUploaded; }
     else if (act === "addPreConsult") { w.preConsults.push({ n: w.preConsults.length + 1, date: "", confirmed: false, confirmedAt: "", noteUploaded: false }); }
     else if (act === "drawUpload") { w.reviewRounds[i].drawingsUploaded = !w.reviewRounds[i].drawingsUploaded; }
