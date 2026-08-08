@@ -585,6 +585,27 @@
     if (leg) leg.innerHTML = dashLegendHtml();
   }
 
+  /* ---------- MKM state persistence (localStorage, per project) ----------
+     Keeps Step 1 (activeSteps[0].da) and Step 2 (activeSteps[1].s2) across
+     page reloads so entered dates/uploads/statuses survive a refresh. */
+  function mkmProjectKey() { return "mkm:" + [regionSelect.value, buSelect.value, projectSelect.value].join("|"); }
+  function mkmSave() {
+    try {
+      if (!activeSteps.length) return;
+      const data = { da: activeSteps[0] && activeSteps[0].da, s2: activeSteps[1] && activeSteps[1].s2 };
+      localStorage.setItem(mkmProjectKey(), JSON.stringify(data));
+    } catch (e) { /* storage unavailable — ignore */ }
+  }
+  function mkmLoad() {
+    try {
+      const raw = localStorage.getItem(mkmProjectKey());
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data.da && activeSteps[0]) activeSteps[0].da = data.da;
+      if (data.s2 && activeSteps[1]) activeSteps[1].s2 = data.s2;
+    } catch (e) { /* ignore */ }
+  }
+
   /* ---------- Master KM · Step 1 — Design Approval & Briefing ----------
      A native rebuild of the reference page (sections 1.1–1.5). State lives
      on activeSteps[0].da so clicks persist across navigation in the session,
@@ -713,6 +734,7 @@
     const step = activeSteps[index];
     if (!step.da) step.da = seedDesignApproval();
     content.innerHTML = daHtml(step.da);
+    mkmSave();
   }
   function handleDaClick(el) {
     const step = activeSteps[selectedStepIndex];
@@ -823,14 +845,15 @@
   // The left "Authority & Agency Status" sidebar — clickable agencies + add/remove settings.
   function s2Sidebar(s) {
     function chips(list, group) {
+      const dot = function (st) { return '<span class="legend-dot ld-' + st + '" style="display:inline-block;vertical-align:middle;margin-right:5px"></span>'; };
       return '<div class="agency-grid">' + list.map(function (a) {
         const st = s2AgencyStatus(s.workflows[a.code]);
         if (s.settingsOpen) {
-          return '<span class="agency-chip st-' + st + '" title="' + esc(a.name) + '">' + esc(a.code) +
+          return '<span class="agency-chip st-' + st + '" title="' + esc(a.name) + '">' + dot(st) + esc(a.code) +
             ' <button type="button" data-s2="removeAgency" data-group="' + group + '" data-code="' + esc(a.code) + '" title="Remove ' + esc(a.code) + '" style="border:none;background:none;color:#b4232a;cursor:pointer;font-weight:800;padding:0 2px;font-size:14px">×</button></span>';
         }
         const sel = a.code === s.selectedAgency ? " selected" : "";
-        return '<button type="button" class="agency-chip st-' + st + sel + '" data-s2="selectAgency" data-code="' + esc(a.code) + '" title="' + esc(a.name) + '">' + esc(a.code) + (st === "completed" ? " ✓" : "") + "</button>";
+        return '<button type="button" class="agency-chip st-' + st + sel + '" data-s2="selectAgency" data-code="' + esc(a.code) + '" title="' + esc(a.name) + '">' + dot(st) + esc(a.code) + (st === "completed" ? " ✓" : "") + "</button>";
       }).join("") + "</div>";
     }
     function addForm(group) {
@@ -951,6 +974,7 @@
     const step = activeSteps[index];
     if (!step.s2) step.s2 = seedStep2();
     content.innerHTML = s2Html(step.s2);
+    mkmSave();
   }
   function handleS2Click(el) {
     const step = activeSteps[selectedStepIndex];
@@ -1147,6 +1171,7 @@
     renderMkmFlow(masterBody);       // redraw the (always-visible) flow with the ring
     if (overview) overview.hidden = true;   // free the space; the flow stays on top
     host.hidden = false;
+    mkmLoad();                        // restore any saved Step 1 / Step 2 state
 
     if (index === 0) {
       // MKM Step 1 — native Design Approval page (its own header + sections 1.1–1.5)
