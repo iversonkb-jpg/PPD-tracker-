@@ -761,8 +761,11 @@
     const gen = (typeof GENERAL_DOCS_SEED !== "undefined" ? GENERAL_DOCS_SEED : []).map(function (g) { return { title: g.title, uploaded: false }; });
     const kmDocs = internal.concat(external).map(function (a) { return { code: a.code, name: a.name, uploaded: false }; });
     return {
+      activeTab: "pre",
       agencies: { internal: internal, external: external },
       preConsults: [ { n: 1, date: "", confirmed: false, confirmedAt: "", noteUploaded: false } ],
+      meetingNoteUploaded: false,
+      reviewDate: { date: "", confirmed: false, confirmedAt: "" },
       general: gen,
       kmDocs: kmDocs,
       reviewRounds: [ { n: 1, drawingsUploaded: false, ppdOutcome: null, comment: "" } ]
@@ -773,64 +776,77 @@
       (uploaded ? '<span class="da-stamp"><span class="da-dot"></span><b>Uploaded</b></span>'
                 : '<button type="button" class="btn btn-secondary" style="padding:7px 16px;font-size:12.5px" data-s2="' + action + '" data-i="' + i + '">Upload</button>') + "</div>";
   }
-  function s2DateBlock(obj, i) {
+  // Date + Confirm/Cancel; `id` is the input id to read on confirm, `confirmAct` the data-s2 verb.
+  function s2DateBlock(obj, id, confirmAct, cancelAct, i) {
     if (obj.confirmed) {
       return '<div class="da-field-row"><input type="date" class="sd-input pc-date" value="' + esc(obj.date) + '" disabled>' +
         '<span class="da-stamp"><span class="da-dot"></span><b>Confirmed</b> <span class="da-time">' + esc(obj.confirmedAt) + "</span></span></div>";
     }
-    return '<div class="da-field-row"><input type="date" class="sd-input pc-date" id="s2-pc-' + i + '"></div>' +
-      '<div class="sd-actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-s2="pcConfirm" data-i="' + i + '">Confirm</button>' +
-      '<button type="button" class="btn btn-secondary" data-s2="pcCancel">Cancel</button></div>';
+    return '<div class="da-field-row"><input type="date" class="sd-input pc-date" id="' + id + '"></div>' +
+      '<div class="sd-actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-s2="' + confirmAct + '" data-i="' + i + '">Confirm</button>' +
+      '<button type="button" class="btn btn-secondary" data-s2="' + cancelAct + '">Cancel</button></div>';
   }
-  function s2AgencyGrid(list) {
-    return '<div class="km-grid">' + list.map(function (a) {
-      return '<div class="km-card"><div class="km-card-body"><div class="km-card-label"><div class="km-code">' + esc(a.code) + '</div><div class="km-desc">' + esc(a.name) + '</div></div><div class="km-card-right"><span class="st-chip st-na">Not Started</span></div></div></div>';
-    }).join("") + "</div>";
+  // The left "Authority & Agency Status" sidebar (display board).
+  function s2Sidebar(s) {
+    function chips(list) {
+      return '<div class="agency-grid">' + list.map(function (a) {
+        return '<span class="agency-chip st-not-started" title="' + esc(a.name) + '">' + esc(a.code) + "</span>";
+      }).join("") + "</div>";
+    }
+    return '<aside class="pc-side">' +
+      '<div class="pc-side-title-row"><div class="pc-side-title">Authority &amp; Agency Status</div>' +
+        '<button type="button" class="icon-btn" title="Agency settings" aria-label="Agency settings">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div>' +
+      '<div class="pc-group-title">Internal Agency</div>' + chips(s.agencies.internal) +
+      '<div class="pc-group-title">External Agency</div>' + chips(s.agencies.external) +
+      '<div class="pc-legend"><div class="pc-group-title">Status Legend</div><div class="legend-grid">' +
+        '<span class="legend-item"><span class="legend-dot ld-delayed"></span>Delayed</span>' +
+        '<span class="legend-item"><span class="legend-dot ld-alarming"></span>Alarming</span>' +
+        '<span class="legend-item"><span class="legend-dot ld-in-progress"></span>In Progress</span>' +
+        '<span class="legend-item"><span class="legend-dot ld-completed"></span>Completed</span>' +
+        '<span class="legend-item"><span class="legend-dot ld-na"></span>Not Applicable</span>' +
+        '<span class="legend-item"><span class="legend-dot ld-not-started"></span>Not Started</span>' +
+      "</div></div></aside>";
   }
   function s2Html(s) {
     const approved = s.reviewRounds.some(function (r) { return r.ppdOutcome === "approved"; });
-    let h = '<div class="pc-head-card" style="margin-bottom:6px">' +
+    const tab = s.activeTab || "pre";
+    const on = function (t) { return tab === t ? " active" : ""; };
+
+    let h = '<div class="pc-head-card" style="margin-bottom:14px">' +
       '<div style="display:flex;gap:14px;align-items:center">' +
         '<div class="sd-badge">2</div>' +
         '<div><div class="sd-eyebrow">STEP 2 OF ' + MKM_NODES.length + "</div>" +
-        '<h3 style="margin:0;font-family:var(--font-serif);font-size:20px;color:var(--ink)">Pre-Consultation</h3></div>' +
+        '<h3 style="margin:0;font-family:var(--font-serif);font-size:20px;color:var(--ink)">Pre-Consultation &amp; Upload Doc</h3></div>' +
       "</div>" +
       '<span class="st-chip ' + (approved ? "st-completed" : "st-in-progress") + '">' + (approved ? "Completed" : "In Progress") + "</span></div>";
 
-    // 2.1 Pre-Consultation (repeatable)
+    // Tab bar (no BP checklist)
+    h += '<div class="step-tabs">' +
+      '<button type="button" class="step-tab' + on("pre") + '" data-s2="tab" data-tab="pre">Pre-Consultation</button>' +
+      '<button type="button" class="step-tab' + on("general") + '" data-s2="tab" data-tab="general">Upload (General)</button>' +
+      '<button type="button" class="step-tab' + on("km") + '" data-s2="tab" data-tab="km">Upload (KM Checklist)</button>' +
+      "</div>";
+
+    // ---- Pre-Consultation panel: sidebar + workflow ----
     const pcs = s.preConsults.map(function (p, i) {
       return '<div class="da-subcard' + (p.confirmed ? " da-ok" : "") + '">' +
         '<div class="da-sub-title">Pre-Consultation ' + p.n + " " + (p.confirmed ? '<span class="st-chip st-completed">Date confirmed</span>' : '<span class="st-chip st-na">Pending</span>') + "</div>" +
         '<div class="pc-q-label" style="margin-bottom:4px">2.1 Date of pre-consultation (by Consultant)</div>' +
-        s2DateBlock(p, i) +
+        s2DateBlock(p, "s2-pc-" + i, "pcConfirm", "pcCancel", i) +
         '<div style="height:8px"></div>' +
         '<div class="pc-q-label" style="margin-bottom:0">2.2 Pre-consultation comments / notes (if any)</div>' +
         s2UploadItem("Comments / notes", p.noteUploaded, "pcNote", i) + "</div>";
     }).join("");
-    h += '<section class="pc-card"><h4 class="pc-card-title">2.1 Pre-Consultation</h4>' +
-      '<div class="pc-hint" style="margin-top:0">Set the pre-consultation date and upload any notes. Add another round if a second pre-consultation is needed.</div>' +
+    const preCard = '<section class="pc-card"><h4 class="pc-card-title">Pre-Consultation</h4>' +
       pcs + '<button type="button" class="da-add" data-s2="addPreConsult">＋ Add Pre-Consultation ' + (s.preConsults.length + 1) + "</button></section>";
 
-    // 2.2 Upload — General
-    h += '<section class="pc-card"><h4 class="pc-card-title">2.2 Upload — General Checklist</h4>' +
-      s.general.map(function (g, i) { return s2UploadItem(g.title, g.uploaded, "genUpload", i); }).join("") + "</section>";
-
-    // 2.3 Upload — KM Checklist (no BP checklist)
-    h += '<section class="pc-card"><h4 class="pc-card-title">2.3 Upload — KM Checklist</h4>' +
-      '<div class="pc-hint" style="margin-top:0">Upload each authority/agency document required for the Kebenaran Merancang (KM) checklist.</div>' +
-      s.kmDocs.map(function (a, i) { return s2UploadItem(a.code + " · " + a.name, a.uploaded, "kmUpload", i); }).join("") + "</section>";
-
-    // 2.4 Authority & Agency board
-    h += '<section class="pc-card"><h4 class="pc-card-title">2.4 Authority &amp; Agency</h4>' +
-      '<div class="km-section-title" style="margin-top:6px">Internal Agency</div>' + s2AgencyGrid(s.agencies.internal) +
-      '<div class="km-section-title" style="margin-top:14px">External Agency</div>' + s2AgencyGrid(s.agencies.external) + "</section>";
-
-    // 2.5 Submission review loop
+    // Meeting & Review card: 2.3, 2.4, and the 2.5 submission loop
     const rounds = s.reviewRounds.map(function (r, i) {
-      const tag = r.ppdOutcome === "approved" ? '<span class="st-chip st-completed">Approved for submission ✓</span>'
+      const tg = r.ppdOutcome === "approved" ? '<span class="st-chip st-completed">Approved for submission ✓</span>'
         : r.ppdOutcome === "comment" ? '<span class="st-chip st-alarming">Revision requested</span>'
         : '<span class="st-chip st-na">In review</span>';
-      let body = '<div class="da-sub-title">' + (i === 0 ? "Submission" : "Revised Submission " + r.n) + " " + tag + "</div>" +
+      let body = '<div class="da-sub-title">' + (i === 0 ? "Submission" : "Revised Submission " + r.n) + " " + tg + "</div>" +
         s2UploadItem("Submission drawings / documents", r.drawingsUploaded, "drawUpload", i);
       if (r.drawingsUploaded && r.ppdOutcome === null) {
         body += '<div class="pc-q-label" style="margin-top:12px;margin-bottom:6px">PPD review &amp; comment</div>' +
@@ -842,9 +858,25 @@
       if (r.ppdOutcome === "approved") body += '<div class="da-routing ok" style="margin-top:10px">✓ PPD approved for submission — proceed to Step 3.</div>';
       return '<div class="da-subcard' + (r.ppdOutcome === "approved" ? " da-ok" : "") + '">' + body + "</div>";
     }).join("");
-    h += '<section class="pc-card"><h4 class="pc-card-title">2.5 Submission Review</h4>' +
-      '<div class="pc-hint" style="margin-top:0">Consultant uploads submission drawings/documents; PPD reviews and either approves or comments. If commented, the consultant uploads a revised submission — repeat until PPD approves.</div>' +
-      rounds + "</section>";
+    const reviewCard = '<section class="pc-card"><h4 class="pc-card-title">Meeting &amp; Review</h4>' +
+      '<div class="pc-q"><div class="pc-q-label">2.3 Consultant to upload meeting note/sketch (if meeting with PPD)</div>' +
+        s2UploadItem("Meeting note / sketch", s.meetingNoteUploaded, "meetingNote", 0) + "</div>" +
+      '<div class="pc-q"><div class="pc-q-label">2.4 PPD to set date for Consultant to upload revised drawings for review</div>' +
+        s2DateBlock(s.reviewDate, "s2-reviewdate", "reviewConfirm", "reviewCancel", 0) +
+        '<div class="pc-hint">System will notify Consultant in their task list.</div></div>' +
+      '<div class="pc-q"><div class="pc-q-label">2.5 Submission review — upload, PPD review &amp; comment, revise until approved</div>' +
+        rounds + "</div></section>";
+
+    h += '<div class="step-tabpanels">' +
+      '<div class="step-tabpanel' + on("pre") + '" data-s2panel="pre">' +
+        '<div class="pc-layout">' + s2Sidebar(s) + '<div class="pc-main">' + preCard + reviewCard + "</div></div></div>" +
+      '<div class="step-tabpanel' + on("general") + '" data-s2panel="general">' +
+        '<div class="sd-field-hint" style="margin-bottom:14px">Upload &amp; send each general submission document.</div>' +
+        s.general.map(function (g, i) { return s2UploadItem(g.title, g.uploaded, "genUpload", i); }).join("") + "</div>" +
+      '<div class="step-tabpanel' + on("km") + '" data-s2panel="km">' +
+        '<div class="sd-field-hint" style="margin-bottom:14px">Upload &amp; send each authority/agency document required for the Kebenaran Merancang (KM) checklist.</div>' +
+        s.kmDocs.map(function (a, i) { return s2UploadItem(a.code + " · " + a.name, a.uploaded, "kmUpload", i); }).join("") + "</div>" +
+      "</div>";
     return h;
   }
   function renderStep2(index) {
@@ -858,12 +890,18 @@
     const step = activeSteps[selectedStepIndex];
     if (!step || !step.s2) return;
     const s = step.s2, act = el.getAttribute("data-s2"), i = +el.getAttribute("data-i");
-    if (act === "pcCancel") { renderStep2(selectedStepIndex); return; }
+    if (act === "tab") { s.activeTab = el.getAttribute("data-tab"); renderStep2(selectedStepIndex); return; }
+    if (act === "pcCancel" || act === "reviewCancel") { renderStep2(selectedStepIndex); return; }
     if (act === "pcConfirm") {
       const inp = document.getElementById("s2-pc-" + i);
       if (!inp || !inp.value) { alert("Please pick a date first."); return; }
       s.preConsults[i].date = inp.value; s.preConsults[i].confirmed = true; s.preConsults[i].confirmedAt = daNow();
-    } else if (act === "pcNote") { s.preConsults[i].noteUploaded = !s.preConsults[i].noteUploaded; }
+    } else if (act === "reviewConfirm") {
+      const inp = document.getElementById("s2-reviewdate");
+      if (!inp || !inp.value) { alert("Please pick a date first."); return; }
+      s.reviewDate.date = inp.value; s.reviewDate.confirmed = true; s.reviewDate.confirmedAt = daNow();
+    } else if (act === "meetingNote") { s.meetingNoteUploaded = !s.meetingNoteUploaded; }
+    else if (act === "pcNote") { s.preConsults[i].noteUploaded = !s.preConsults[i].noteUploaded; }
     else if (act === "addPreConsult") { s.preConsults.push({ n: s.preConsults.length + 1, date: "", confirmed: false, confirmedAt: "", noteUploaded: false }); }
     else if (act === "genUpload") { s.general[i].uploaded = !s.general[i].uploaded; }
     else if (act === "kmUpload") { s.kmDocs[i].uploaded = !s.kmDocs[i].uploaded; }
