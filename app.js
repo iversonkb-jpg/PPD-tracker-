@@ -585,6 +585,160 @@
     if (leg) leg.innerHTML = dashLegendHtml();
   }
 
+  /* ---------- Master KM · Step 1 — Design Approval & Briefing ----------
+     A native rebuild of the reference page (sections 1.1–1.5). State lives
+     on activeSteps[0].da so clicks persist across navigation in the session,
+     like every other step. Interactions are handled via delegation on
+     #masterBody (see the master-body click/change listeners below). */
+  function seedDesignApproval() {
+    return {
+      basePlan: { planUrl: "#", planDate: "26 Mar 26", briefUrl: "#", briefDate: "26 Mar 26", docRegUrl: "#", docRegDate: "28 Mar 26" },
+      briefing: { outlookUrl: "#", date: "2026-04-07", confirmed: true, confirmedAt: "07 Apr 2026, 10:15 AM" },
+      meetings: [
+        { n: 1, outlookUrl: "#", date: "2026-04-21", confirmed: true, confirmedAt: "14 Apr 2026, 9:02 AM", minutesUrl: "#", docRegUrl: "#", feasiUrl: "#", acceptable: false },
+        { n: 2, outlookUrl: "#", date: "", confirmed: false, confirmedAt: "", minutesUrl: "", docRegUrl: "", feasiUrl: "", acceptable: null }
+      ],
+      clearances: [ { n: 1, outlookUrl: "#", date: "", confirmed: false, confirmedAt: "", slideUrl: "", outcome: null } ],
+      final: { planUrl: "", uploadedBy: "Planner", approved: false, approvedAt: "" }
+    };
+  }
+  function daNow() {
+    const dt = new Date();
+    return dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) +
+      ", " + dt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  }
+  function daLinkRow(label, url, date) {
+    return '<div class="da-linkrow">' +
+      (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(label) + "</a>"
+           : '<span class="da-missing">' + esc(label) + " — not linked yet</span>") +
+      '<span class="da-date">' + esc(date || "") + "</span></div>";
+  }
+  function daDateBlock(obj, prefix, note) {
+    if (obj.confirmed) {
+      return '<div class="da-field-row"><input type="date" class="sd-input pc-date" value="' + esc(obj.date) + '" disabled>' +
+        '<span class="da-stamp"><span class="da-dot"></span><b>Confirmed</b> <span class="da-time">' + esc(obj.confirmedAt) + "</span></span></div>" +
+        (obj.outlookUrl ? '<a class="da-cal" href="' + esc(obj.outlookUrl) + '" target="_blank" rel="noopener">Open in Outlook calendar ›</a>' : "");
+    }
+    return '<div class="da-field-row"><input type="date" class="sd-input pc-date" id="da-' + prefix + '-date" value="' + esc(obj.date) + '"></div>' +
+      '<div class="sd-actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-da="confirm" data-prefix="' + prefix + '">Confirm</button>' +
+      '<button type="button" class="btn btn-secondary" data-da="cancel">Cancel</button></div>' +
+      (obj.outlookUrl ? '<a class="da-cal" href="' + esc(obj.outlookUrl) + '" target="_blank" rel="noopener">Open in Outlook calendar ›</a>' : "") +
+      (note ? '<div class="pc-hint">' + esc(note) + "</div>" : "");
+  }
+  function daItem(label, url, extra) {
+    return '<div class="da-item"><span>' + esc(label) + " " + (extra || "") + "</span>" +
+      (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">Open ›</a>' : '<span class="da-pending">pending upload</span>') + "</div>";
+  }
+  function daHtml(d) {
+    const acceptedMeeting = d.meetings.find(function (m) { return m.acceptable === true; });
+    const lastClearance = d.clearances[d.clearances.length - 1];
+    const cleared = d.clearances.some(function (c) { return c.outcome === "approved"; });
+    const n = MKM_NODES.length;
+
+    let h = '<div class="pc-head-card" style="margin-bottom:6px">' +
+      '<div style="display:flex;gap:14px;align-items:center">' +
+        '<div class="sd-badge completed">1</div>' +
+        '<div><div class="sd-eyebrow">STEP 1 OF ' + n + "</div>" +
+        '<h3 style="margin:0;font-family:var(--font-serif);font-size:20px;color:var(--ink)">Design Approval &amp; Briefing</h3></div>' +
+      "</div>" +
+      '<span class="st-chip ' + (d.final.approved ? "st-completed" : "st-in-progress") + '">' + (d.final.approved ? "Completed" : "In Progress") + "</span></div>";
+
+    h += '<section class="pc-card"><h4 class="pc-card-title">1.1 Base Plan (approved by Mgmt)</h4>' +
+      daLinkRow("Link to approved base plan (auto-linked from Product Planning Flow)", d.basePlan.planUrl, d.basePlan.planDate) +
+      daLinkRow("Project brief & timeline (link to master programme)", d.basePlan.briefUrl, d.basePlan.briefDate) +
+      daLinkRow("Documents registration", d.basePlan.docRegUrl, d.basePlan.docRegDate) + "</section>";
+
+    h += '<section class="pc-card"><h4 class="pc-card-title">1.2 PPD to brief Consultant on design brief and timeline</h4>' +
+      '<div class="pc-hint" style="margin-top:0">Briefing date must be within 1 week from management approval.</div>' +
+      daDateBlock(d.briefing, "briefing", "System will auto-send an email meeting invitation to the consultants and PPD on the selected date.") + "</section>";
+
+    const mtgs = d.meetings.map(function (m, i) {
+      const tag = m.acceptable === true ? '<span class="st-chip st-completed">Acceptable ✓ — proceed to 1.4</span>'
+        : m.acceptable === false ? '<span class="st-chip st-alarming">Not acceptable — repeat</span>'
+        : '<span class="st-chip st-na">In progress</span>';
+      return '<div class="da-subcard' + (m.acceptable === true ? " da-ok" : "") + '">' +
+        '<div class="da-sub-title">MKM Meeting ' + m.n + " " + tag + "</div>" +
+        daDateBlock(m, "mtg" + i, "System will auto-send the meeting invitation to consultants and PPD.") +
+        '<div style="height:10px"></div>' +
+        daItem("Meeting minutes", m.minutesUrl) + daItem("Document registration", m.docRegUrl) + daItem("Feasibility study", m.feasiUrl) +
+        (m.acceptable === null ? '<div class="sd-actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-da="acceptable" data-i="' + i + '" data-val="1">Mark acceptable</button><button type="button" class="btn btn-secondary" data-da="acceptable" data-i="' + i + '" data-val="0">Not acceptable</button></div>' : "") + "</div>";
+    }).join("");
+    h += '<section class="pc-card"><h4 class="pc-card-title">1.3 MKM Meeting</h4>' +
+      '<div class="pc-hint" style="margin-top:0">Each meeting: set the date, upload minutes & documents, run the feasibility study, then mark whether the plan is acceptable. Repeat until acceptable.</div>' +
+      mtgs + (!acceptedMeeting ? '<button type="button" class="da-add" data-da="addMeeting">＋ Add MKM Meeting ' + (d.meetings.length + 1) + "</button>" : "") + "</section>";
+
+    const cls = d.clearances.map(function (c, i) {
+      const tag = c.outcome === "approved" ? '<span class="st-chip st-completed">Approved ✓</span>'
+        : c.outcome === "comment" ? '<span class="st-chip st-alarming">Comment</span>'
+        : c.outcome === "approved-comment" ? '<span class="st-chip st-alarming">Approved with comment</span>'
+        : '<span class="st-chip st-na">Pending</span>';
+      const oc = function (val, name, desc) {
+        return '<label class="da-outcome' + (c.outcome === val ? " sel" : "") + '">' +
+          '<input type="radio" name="da-oc' + i + '" value="' + val + '" data-da="outcome" data-i="' + i + '"' + (c.outcome === val ? " checked" : "") + ">" +
+          '<span><span class="da-o-name">' + name + '</span><div class="da-o-desc">' + desc + "</div></span></label>";
+      };
+      let routing = "";
+      if (c.outcome === "approved") routing = '<div class="da-routing ok">✓ Cleared — go to 1.5 and upload the final plan.</div>';
+      else if (c.outcome === "comment") routing = '<div class="da-routing warn">↻ Back to 1.3: add MKM Meeting ' + (d.meetings.length + 1) + ", resolve comments, then add Management Clearance " + (c.n + 1) + " below.</div>";
+      else if (c.outcome === "approved-comment") routing = '<div class="da-routing warn">↻ Back to 1.3 to confirm the changes, then proceed straight to 1.5.</div>';
+      return '<div class="da-subcard">' +
+        '<div class="da-sub-title">Management Clearance ' + c.n + " " + tag + "</div>" +
+        daDateBlock(c, "cl" + i, "") + '<div style="height:10px"></div>' +
+        daItem("Presentation slide", c.slideUrl, '<span class="da-internal">view internally only</span>') +
+        '<div class="da-outcomes">' +
+          oc("approved", "Management approved", "Proceed to 1.5 — Approved MKM Plan.") +
+          oc("comment", "Management comment", "Hold another MKM meeting in 1.3 to fix. Once confirmed → Management Clearance " + (c.n + 1) + ".") +
+          oc("approved-comment", "Approved with comment", "Address via MKM meeting in 1.3; once changes confirmed → proceed to 1.5 (no re-clearance).") +
+        "</div>" + routing + "</div>";
+    }).join("");
+    h += '<section class="pc-card"><h4 class="pc-card-title">1.4 PPD to clear management</h4>' +
+      '<div class="pc-hint" style="margin-top:0">' + (acceptedMeeting ? "Plan is acceptable — book management clearance." : "Available once an MKM meeting is marked acceptable.") + "</div>" +
+      cls + (lastClearance && lastClearance.outcome === "comment" ? '<button type="button" class="da-add" data-da="addClearance">＋ Add Management Clearance ' + (d.clearances.length + 1) + "</button>" : "") + "</section>";
+
+    h += '<section class="pc-card"><h4 class="pc-card-title">1.5 Approved MKM Plan</h4>' +
+      '<div class="pc-hint" style="margin-top:0">Planner uploads the final plan; PPD clicks approval to close Step 1.</div>' +
+      '<div class="da-subcard' + (d.final.approved ? " da-ok" : "") + '">' +
+        '<div class="da-sub-title">Final MKM Plan ' + (d.final.approved ? '<span class="st-chip st-completed">Approved by PPD ✓</span>' : '<span class="st-chip st-na">Awaiting</span>') + "</div>" +
+        daItem("Final plan (uploaded by " + d.final.uploadedBy + ")", d.final.planUrl) +
+        (d.final.approved
+          ? '<div class="da-stamp" style="margin-top:12px"><span class="da-dot"></span><b>Approved</b> <span class="da-time">' + esc(d.final.approvedAt) + '</span></div><div class="da-routing ok" style="margin-top:10px">Masterplan confirmed — proceed to Step 2 · Pre-Consultation.</div>'
+          : '<div class="sd-actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-da="approveFinal"' + (cleared && d.final.planUrl ? "" : ' disabled style="opacity:.45;cursor:not-allowed"') + ">PPD Approval</button></div>" +
+            '<div class="pc-hint">' + (cleared ? (d.final.planUrl ? "Ready for PPD approval." : "Waiting for Planner to upload the final plan.") : "Unlocks after management clearance is approved.") + "</div>") +
+      "</div></section>";
+    return h;
+  }
+  function renderDesignApproval(index) {
+    const content = masterBody.querySelector("#mkmStepContent");
+    if (!content) return;
+    const step = activeSteps[index];
+    if (!step.da) step.da = seedDesignApproval();
+    content.innerHTML = daHtml(step.da);
+  }
+  function handleDaClick(el) {
+    const step = activeSteps[selectedStepIndex];
+    if (!step || !step.da) return;
+    const d = step.da, act = el.getAttribute("data-da");
+    if (act === "cancel") { renderDesignApproval(selectedStepIndex); return; }
+    if (act === "confirm") {
+      const prefix = el.getAttribute("data-prefix");
+      const input = document.getElementById("da-" + prefix + "-date");
+      if (!input || !input.value) { alert("Please pick a date first."); return; }
+      const obj = prefix === "briefing" ? d.briefing
+        : prefix.indexOf("mtg") === 0 ? d.meetings[+prefix.slice(3)]
+        : prefix.indexOf("cl") === 0 ? d.clearances[+prefix.slice(2)] : null;
+      if (obj) { obj.date = input.value; obj.confirmed = true; obj.confirmedAt = daNow(); }
+    } else if (act === "acceptable") {
+      d.meetings[+el.getAttribute("data-i")].acceptable = el.getAttribute("data-val") === "1";
+    } else if (act === "addMeeting") {
+      d.meetings.push({ n: d.meetings.length + 1, outlookUrl: "#", date: "", confirmed: false, confirmedAt: "", minutesUrl: "", docRegUrl: "", feasiUrl: "", acceptable: null });
+    } else if (act === "addClearance") {
+      d.clearances.push({ n: d.clearances.length + 1, outlookUrl: "#", date: "", confirmed: false, confirmedAt: "", slideUrl: "", outcome: null });
+    } else if (act === "approveFinal") {
+      d.final.approved = true; d.final.approvedAt = daNow();
+    }
+    renderDesignApproval(selectedStepIndex);
+  }
+
   // Fills the hooks in content/step-dashboard.html (must already be injected).
   function renderDashboard() {
     if (!activeSteps.length) return;
@@ -713,22 +867,36 @@
     if (!activeSteps.length || !STEP_NAMES[index]) return;
     const host = masterBody.querySelector("#mkmStepHost");
     const overview = masterBody.querySelector("#mkmOverview");
-    if (!host) return;
+    const content = host && host.querySelector("#mkmStepContent");
+    if (!host || !content) return;
     selectedStepIndex = index;
     mkmSelectedIndex = index;
     renderMkmFlow(masterBody);       // redraw the (always-visible) flow with the ring
-    fillStepHeader(index);
-    host.appendChild(stepDetail);    // borrow the shared step block
     if (overview) overview.hidden = true;   // free the space; the flow stays on top
     host.hidden = false;
-    stepDetail.hidden = false;
-    loadStepBody(index);
+
+    if (index === 0) {
+      // MKM Step 1 — native Design Approval page (its own header + sections 1.1–1.5)
+      ensureStepDetailHome();
+      stepDetail.hidden = true;
+      renderDesignApproval(index);
+    } else {
+      // Steps 2–7 — reuse the shared step working page, hosted inside MKM
+      content.innerHTML = "";
+      content.appendChild(stepDetail);   // borrow the shared step block
+      fillStepHeader(index);
+      document.getElementById("sdTotal").textContent = MKM_NODES.length;   // "of 7" in the MKM flow
+      stepDetail.hidden = false;
+      loadStepBody(index);
+    }
   }
   function closeMkmStep() {
     stepDetail.hidden = true;
     ensureStepDetailHome();
     const host = masterBody.querySelector("#mkmStepHost");
     const overview = masterBody.querySelector("#mkmOverview");
+    const content = host && host.querySelector("#mkmStepContent");
+    if (content) content.innerHTML = "";
     if (host) host.hidden = true;
     if (overview) overview.hidden = false;
     selectedStepIndex = -1;
@@ -739,9 +907,17 @@
   if (masterBody) {
     masterBody.addEventListener("click", function (e) {
       if (e.target.closest("[data-mkm-back]")) { closeMkmStep(); return; }
+      const da = e.target.closest("[data-da]");
+      if (da && da.tagName !== "INPUT") { handleDaClick(da); return; }   // radios handled on change
       const node = e.target.closest(".dash-svg-node[data-dash-step]");
       if (!node || !activeSteps.length) return;
       openMkmStep(Number(node.getAttribute("data-dash-step")));
+    });
+    masterBody.addEventListener("change", function (e) {
+      const oc = e.target.closest('input[data-da="outcome"]');
+      if (!oc) return;
+      const step = activeSteps[selectedStepIndex];
+      if (step && step.da) { step.da.clearances[+oc.getAttribute("data-i")].outcome = oc.value; renderDesignApproval(selectedStepIndex); }
     });
   }
 

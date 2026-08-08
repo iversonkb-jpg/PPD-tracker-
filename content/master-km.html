@@ -33,7 +33,8 @@
       <button type="button" data-mkm-back title="Close step" aria-label="Close step"
         style="border:none;background:none;cursor:pointer;font-size:22px;line-height:1;color:var(--muted);padding:2px 8px">✕</button>
     </div>
-    <!-- app.js relocates the shared #stepDetail block in here -->
+    <!-- Step 1 renders natively here; Steps 2–7 get the shared #stepDetail block moved in -->
+    <div id="mkmStepContent"></div>
   </div>
 
   <!-- ===== OVERVIEW (hidden while a milestone step is open) ===== -->

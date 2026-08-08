@@ -499,6 +499,40 @@ body {
 .btn-secondary { background: var(--white); color: var(--ink); border-color: var(--line); }
 .btn-secondary:hover { border-color: var(--muted); }
 
+/* ---- Master KM · Step 1 Design Approval (native rebuild) ---- */
+.da-linkrow { display:flex; justify-content:space-between; align-items:center; gap:16px; background:var(--brand-green-light); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-top:10px; }
+.da-linkrow a { color:var(--brand-green-dark); font-weight:700; font-size:13.5px; text-decoration:none; }
+.da-linkrow a:hover { text-decoration:underline; }
+.da-linkrow .da-missing { color:var(--muted); font-weight:600; font-size:12.5px; }
+.da-linkrow .da-date { font-weight:700; font-size:13.5px; color:var(--ink); white-space:nowrap; }
+.da-field-row { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:10px; }
+.da-cal { display:inline-block; margin-top:8px; font-size:12.5px; color:var(--brand-green-dark); font-weight:600; text-decoration:none; }
+.da-cal:hover { text-decoration:underline; }
+.da-subcard { border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-top:12px; }
+.da-subcard.da-ok { border-color:var(--brand-green); background:#fbfdfb; }
+.da-sub-title { font-size:14.5px; font-weight:700; color:var(--ink); margin-bottom:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.da-item { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:9px 0; border-bottom:1px solid var(--line); font-size:13px; color:var(--ink); }
+.da-item:last-child { border-bottom:none; }
+.da-item a { color:var(--brand-green-dark); font-weight:700; text-decoration:none; }
+.da-item a:hover { text-decoration:underline; }
+.da-item .da-pending { color:var(--muted); font-size:12.5px; font-weight:600; }
+.da-internal { font-size:11px; color:var(--muted); background:var(--brand-green-light); border-radius:999px; padding:2px 9px; font-weight:600; }
+.da-outcomes { margin-top:12px; display:grid; gap:9px; }
+.da-outcome { display:flex; gap:10px; align-items:flex-start; border:1.5px solid var(--line); border-radius:10px; padding:12px 14px; cursor:pointer; }
+.da-outcome:hover { border-color:var(--brand-green); }
+.da-outcome.sel { border-color:var(--brand-green); background:var(--brand-green-light); }
+.da-outcome input { margin-top:3px; accent-color:var(--brand-green); }
+.da-o-name { font-weight:700; font-size:13.5px; color:var(--ink); }
+.da-o-desc { font-size:12.5px; color:var(--muted); margin-top:2px; }
+.da-routing { margin-top:12px; border-radius:10px; padding:12px 14px; font-size:12.5px; line-height:1.5; }
+.da-routing.ok { background:var(--brand-green-light); color:var(--brand-green-dark); }
+.da-routing.warn { background:#fef3c7; color:#8a5a06; }
+.da-add { width:100%; margin-top:12px; background:var(--white); color:var(--brand-green-dark); border:1.5px dashed var(--brand-green); border-radius:10px; padding:12px; font-size:13px; font-weight:700; cursor:pointer; font-family:var(--font-sans); }
+.da-add:hover { background:var(--brand-green-light); }
+.da-stamp { display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink); }
+.da-stamp .da-dot { width:8px; height:8px; border-radius:50%; background:var(--brand-green); }
+.da-stamp .da-time { color:var(--muted); }
+
 .sd-field-note {
   font-size: 12.5px;
   color: var(--muted);
