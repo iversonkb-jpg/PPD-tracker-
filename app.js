@@ -762,14 +762,35 @@
     const kmDocs = internal.concat(external).map(function (a) { return { code: a.code, name: a.name, uploaded: false }; });
     return {
       activeTab: "pre",
+      settingsOpen: false,
       agencies: { internal: internal, external: external },
+      selectedAgency: internal[0].code,
+      workflows: {},          // per-agency workflow state, created on demand
+      general: gen,
+      kmDocs: kmDocs
+    };
+  }
+  // One agency's 2.1–2.6 workflow.
+  function s2DefaultWorkflow() {
+    return {
       preConsults: [ { n: 1, date: "", confirmed: false, confirmedAt: "", noteUploaded: false } ],
       meetingNoteUploaded: false,
       reviewDate: { date: "", confirmed: false, confirmedAt: "" },
-      general: gen,
-      kmDocs: kmDocs,
-      reviewRounds: [ { n: 1, drawingsUploaded: false, ppdOutcome: null, comment: "" } ]
+      reviewRounds: [ { n: 1, drawingsUploaded: false, ppdOutcome: null, comment: "" } ],
+      submitted: { drawingsUploaded: false, ackUploaded: false }
     };
+  }
+  function s2Workflow(s) {
+    const c = s.selectedAgency;
+    if (!s.workflows[c]) s.workflows[c] = s2DefaultWorkflow();
+    return s.workflows[c];
+  }
+  function s2AgencyStatus(w) {
+    if (!w) return "not-started";
+    if (w.submitted.drawingsUploaded && w.submitted.ackUploaded) return "completed";
+    const started = w.preConsults.some(function (p) { return p.confirmed; }) || w.meetingNoteUploaded ||
+      w.reviewDate.confirmed || w.reviewRounds.some(function (r) { return r.drawingsUploaded || r.ppdOutcome; });
+    return started ? "in-progress" : "not-started";
   }
   function s2UploadItem(label, uploaded, action, i) {
     return '<div class="da-item"><span>' + esc(label) + "</span>" +
@@ -786,19 +807,33 @@
       '<div class="sd-actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-s2="' + confirmAct + '" data-i="' + i + '">Confirm</button>' +
       '<button type="button" class="btn btn-secondary" data-s2="' + cancelAct + '">Cancel</button></div>';
   }
-  // The left "Authority & Agency Status" sidebar (display board).
+  // The left "Authority & Agency Status" sidebar — clickable agencies + add/remove settings.
   function s2Sidebar(s) {
-    function chips(list) {
+    function chips(list, group) {
       return '<div class="agency-grid">' + list.map(function (a) {
-        return '<span class="agency-chip st-not-started" title="' + esc(a.name) + '">' + esc(a.code) + "</span>";
+        const st = s2AgencyStatus(s.workflows[a.code]);
+        if (s.settingsOpen) {
+          return '<span class="agency-chip st-' + st + '" title="' + esc(a.name) + '">' + esc(a.code) +
+            ' <button type="button" data-s2="removeAgency" data-group="' + group + '" data-code="' + esc(a.code) + '" title="Remove ' + esc(a.code) + '" style="border:none;background:none;color:#b4232a;cursor:pointer;font-weight:800;padding:0 2px;font-size:14px">×</button></span>';
+        }
+        const sel = a.code === s.selectedAgency ? " selected" : "";
+        return '<button type="button" class="agency-chip st-' + st + sel + '" data-s2="selectAgency" data-code="' + esc(a.code) + '" title="' + esc(a.name) + '">' + esc(a.code) + (st === "completed" ? " ✓" : "") + "</button>";
       }).join("") + "</div>";
+    }
+    function addForm(group) {
+      if (!s.settingsOpen) return "";
+      return '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
+        '<input class="sd-input" id="s2-add-code-' + group + '" placeholder="Code" style="max-width:78px;padding:6px 8px;font-size:12px">' +
+        '<input class="sd-input" id="s2-add-name-' + group + '" placeholder="Agency name" style="flex:1;min-width:100px;padding:6px 8px;font-size:12px">' +
+        '<button type="button" class="btn btn-secondary" style="padding:6px 12px;font-size:12px" data-s2="addAgency" data-group="' + group + '">Add</button></div>';
     }
     return '<aside class="pc-side">' +
       '<div class="pc-side-title-row"><div class="pc-side-title">Authority &amp; Agency Status</div>' +
-        '<button type="button" class="icon-btn" title="Agency settings" aria-label="Agency settings">' +
+        '<button type="button" class="icon-btn' + (s.settingsOpen ? " active" : "") + '" data-s2="toggleSettings" title="Add / remove agencies" aria-label="Agency settings">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div>' +
-      '<div class="pc-group-title">Internal Agency</div>' + chips(s.agencies.internal) +
-      '<div class="pc-group-title">External Agency</div>' + chips(s.agencies.external) +
+      (s.settingsOpen ? '<div class="pc-hint" style="margin-top:0;margin-bottom:6px">Click × to remove an agency, or add one below.</div>' : "") +
+      '<div class="pc-group-title">Internal Agency</div>' + chips(s.agencies.internal, "internal") + addForm("internal") +
+      '<div class="pc-group-title">External Agency</div>' + chips(s.agencies.external, "external") + addForm("external") +
       '<div class="pc-legend"><div class="pc-group-title">Status Legend</div><div class="legend-grid">' +
         '<span class="legend-item"><span class="legend-dot ld-delayed"></span>Delayed</span>' +
         '<span class="legend-item"><span class="legend-dot ld-alarming"></span>Alarming</span>' +
@@ -809,9 +844,10 @@
       "</div></div></aside>";
   }
   function s2Html(s) {
-    const approved = s.reviewRounds.some(function (r) { return r.ppdOutcome === "approved"; });
     const tab = s.activeTab || "pre";
     const on = function (t) { return tab === t ? " active" : ""; };
+    const all = s.agencies.internal.concat(s.agencies.external);
+    const allDone = all.length > 0 && all.every(function (a) { return s2AgencyStatus(s.workflows[a.code]) === "completed"; });
 
     let h = '<div class="pc-head-card" style="margin-bottom:14px">' +
       '<div style="display:flex;gap:14px;align-items:center">' +
@@ -819,7 +855,7 @@
         '<div><div class="sd-eyebrow">STEP 2 OF ' + MKM_NODES.length + "</div>" +
         '<h3 style="margin:0;font-family:var(--font-serif);font-size:20px;color:var(--ink)">Pre-Consultation &amp; Upload Doc</h3></div>' +
       "</div>" +
-      '<span class="st-chip ' + (approved ? "st-completed" : "st-in-progress") + '">' + (approved ? "Completed" : "In Progress") + "</span></div>";
+      '<span class="st-chip ' + (allDone ? "st-completed" : "st-in-progress") + '">' + (allDone ? "Completed" : "In Progress") + "</span></div>";
 
     // Tab bar (no BP checklist)
     h += '<div class="step-tabs">' +
@@ -828,8 +864,14 @@
       '<button type="button" class="step-tab' + on("km") + '" data-s2="tab" data-tab="km">Upload (KM Checklist)</button>' +
       "</div>";
 
-    // ---- Pre-Consultation panel: sidebar + workflow ----
-    const pcs = s.preConsults.map(function (p, i) {
+    // ---- Pre-Consultation panel: sidebar + the selected agency's workflow ----
+    const w = s2Workflow(s);
+    const st = s2AgencyStatus(w);
+    const stLabel = st === "completed" ? "Completed" : st === "in-progress" ? "In Progress" : "Not Started";
+    const authHead = '<section class="pc-card"><div class="pc-head-card"><div class="pc-authority">Authority: <strong>' + esc(s.selectedAgency) + "</strong></div>" +
+      '<span class="st-chip st-' + st + '">' + stLabel + "</span></div></section>";
+
+    const pcs = w.preConsults.map(function (p, i) {
       return '<div class="da-subcard' + (p.confirmed ? " da-ok" : "") + '">' +
         '<div class="da-sub-title">Pre-Consultation ' + p.n + " " + (p.confirmed ? '<span class="st-chip st-completed">Date confirmed</span>' : '<span class="st-chip st-na">Pending</span>') + "</div>" +
         '<div class="pc-q-label" style="margin-bottom:4px">2.1 Date of pre-consultation (by Consultant)</div>' +
@@ -839,10 +881,9 @@
         s2UploadItem("Comments / notes", p.noteUploaded, "pcNote", i) + "</div>";
     }).join("");
     const preCard = '<section class="pc-card"><h4 class="pc-card-title">Pre-Consultation</h4>' +
-      pcs + '<button type="button" class="da-add" data-s2="addPreConsult">＋ Add Pre-Consultation ' + (s.preConsults.length + 1) + "</button></section>";
+      pcs + '<button type="button" class="da-add" data-s2="addPreConsult">＋ Add Pre-Consultation ' + (w.preConsults.length + 1) + "</button></section>";
 
-    // Meeting & Review card: 2.3, 2.4, and the 2.5 submission loop
-    const rounds = s.reviewRounds.map(function (r, i) {
+    const rounds = w.reviewRounds.map(function (r, i) {
       const tg = r.ppdOutcome === "approved" ? '<span class="st-chip st-completed">Approved for submission ✓</span>'
         : r.ppdOutcome === "comment" ? '<span class="st-chip st-alarming">Revision requested</span>'
         : '<span class="st-chip st-na">In review</span>';
@@ -855,21 +896,27 @@
           '<button type="button" class="btn btn-secondary" data-s2="ppdComment" data-i="' + i + '">Comment (needs revision)</button></div>';
       }
       if (r.ppdOutcome === "comment") body += '<div class="da-routing warn" style="margin-top:10px">↻ Revision requested' + (r.comment ? ": " + esc(r.comment) : "") + ". Consultant to upload a revised submission below.</div>";
-      if (r.ppdOutcome === "approved") body += '<div class="da-routing ok" style="margin-top:10px">✓ PPD approved for submission — proceed to Step 3.</div>';
+      if (r.ppdOutcome === "approved") body += '<div class="da-routing ok" style="margin-top:10px">✓ PPD approved for submission — continue to 2.6.</div>';
       return '<div class="da-subcard' + (r.ppdOutcome === "approved" ? " da-ok" : "") + '">' + body + "</div>";
     }).join("");
     const reviewCard = '<section class="pc-card"><h4 class="pc-card-title">Meeting &amp; Review</h4>' +
       '<div class="pc-q"><div class="pc-q-label">2.3 Consultant to upload meeting note/sketch (if meeting with PPD)</div>' +
-        s2UploadItem("Meeting note / sketch", s.meetingNoteUploaded, "meetingNote", 0) + "</div>" +
+        s2UploadItem("Meeting note / sketch", w.meetingNoteUploaded, "meetingNote", 0) + "</div>" +
       '<div class="pc-q"><div class="pc-q-label">2.4 PPD to set date for Consultant to upload revised drawings for review</div>' +
-        s2DateBlock(s.reviewDate, "s2-reviewdate", "reviewConfirm", "reviewCancel", 0) +
+        s2DateBlock(w.reviewDate, "s2-reviewdate", "reviewConfirm", "reviewCancel", 0) +
         '<div class="pc-hint">System will notify Consultant in their task list.</div></div>' +
       '<div class="pc-q"><div class="pc-q-label">2.5 Submission review — upload, PPD review &amp; comment, revise until approved</div>' +
         rounds + "</div></section>";
 
+    const submittedApproved = w.reviewRounds.some(function (r) { return r.ppdOutcome === "approved"; });
+    const submittedCard = '<section class="pc-card"><h4 class="pc-card-title">2.6 Submitted Documents</h4>' +
+      '<div class="pc-hint" style="margin-top:0">' + (submittedApproved ? "PPD approved — upload the submitted drawings/documents and the authority acknowledgement." : "Available after PPD approves the submission in 2.5.") + "</div>" +
+      s2UploadItem("Submitted drawings / documents", w.submitted.drawingsUploaded, "submittedDraw", 0) +
+      s2UploadItem("Acknowledgement (from authority)", w.submitted.ackUploaded, "submittedAck", 0) + "</section>";
+
     h += '<div class="step-tabpanels">' +
       '<div class="step-tabpanel' + on("pre") + '" data-s2panel="pre">' +
-        '<div class="pc-layout">' + s2Sidebar(s) + '<div class="pc-main">' + preCard + reviewCard + "</div></div></div>" +
+        '<div class="pc-layout">' + s2Sidebar(s) + '<div class="pc-main">' + authHead + preCard + reviewCard + submittedCard + "</div></div></div>" +
       '<div class="step-tabpanel' + on("general") + '" data-s2panel="general">' +
         '<div class="sd-field-hint" style="margin-bottom:14px">Upload &amp; send each general submission document.</div>' +
         s.general.map(function (g, i) { return s2UploadItem(g.title, g.uploaded, "genUpload", i); }).join("") + "</div>" +
@@ -890,29 +937,58 @@
     const step = activeSteps[selectedStepIndex];
     if (!step || !step.s2) return;
     const s = step.s2, act = el.getAttribute("data-s2"), i = +el.getAttribute("data-i");
+    // ----- sidebar / settings (operate on s) -----
     if (act === "tab") { s.activeTab = el.getAttribute("data-tab"); renderStep2(selectedStepIndex); return; }
+    if (act === "toggleSettings") { s.settingsOpen = !s.settingsOpen; renderStep2(selectedStepIndex); return; }
+    if (act === "selectAgency") { s.selectedAgency = el.getAttribute("data-code"); renderStep2(selectedStepIndex); return; }
+    if (act === "addAgency") {
+      const group = el.getAttribute("data-group");
+      const codeEl = document.getElementById("s2-add-code-" + group);
+      const nameEl = document.getElementById("s2-add-name-" + group);
+      const code = codeEl && codeEl.value.trim(); const name = nameEl && nameEl.value.trim();
+      if (!code) { alert("Enter an agency code."); return; }
+      if (s.agencies.internal.concat(s.agencies.external).some(function (a) { return a.code.toLowerCase() === code.toLowerCase(); })) { alert("That code already exists."); return; }
+      s.agencies[group].push({ code: code, name: name || code });
+      s.kmDocs.push({ code: code, name: name || code, uploaded: false });
+      renderStep2(selectedStepIndex); return;
+    }
+    if (act === "removeAgency") {
+      const group = el.getAttribute("data-group"), code = el.getAttribute("data-code");
+      s.agencies[group] = s.agencies[group].filter(function (a) { return a.code !== code; });
+      s.kmDocs = s.kmDocs.filter(function (a) { return a.code !== code; });
+      delete s.workflows[code];
+      if (s.selectedAgency === code) {
+        const rest = s.agencies.internal.concat(s.agencies.external);
+        s.selectedAgency = rest.length ? rest[0].code : "";
+      }
+      renderStep2(selectedStepIndex); return;
+    }
+    // ----- project-level checklist uploads (operate on s) -----
+    if (act === "genUpload") { s.general[i].uploaded = !s.general[i].uploaded; renderStep2(selectedStepIndex); return; }
+    if (act === "kmUpload") { s.kmDocs[i].uploaded = !s.kmDocs[i].uploaded; renderStep2(selectedStepIndex); return; }
+    // ----- per-agency workflow (operate on the selected agency's workflow) -----
+    const w = s2Workflow(s);
     if (act === "pcCancel" || act === "reviewCancel") { renderStep2(selectedStepIndex); return; }
     if (act === "pcConfirm") {
       const inp = document.getElementById("s2-pc-" + i);
       if (!inp || !inp.value) { alert("Please pick a date first."); return; }
-      s.preConsults[i].date = inp.value; s.preConsults[i].confirmed = true; s.preConsults[i].confirmedAt = daNow();
+      w.preConsults[i].date = inp.value; w.preConsults[i].confirmed = true; w.preConsults[i].confirmedAt = daNow();
     } else if (act === "reviewConfirm") {
       const inp = document.getElementById("s2-reviewdate");
       if (!inp || !inp.value) { alert("Please pick a date first."); return; }
-      s.reviewDate.date = inp.value; s.reviewDate.confirmed = true; s.reviewDate.confirmedAt = daNow();
-    } else if (act === "meetingNote") { s.meetingNoteUploaded = !s.meetingNoteUploaded; }
-    else if (act === "pcNote") { s.preConsults[i].noteUploaded = !s.preConsults[i].noteUploaded; }
-    else if (act === "addPreConsult") { s.preConsults.push({ n: s.preConsults.length + 1, date: "", confirmed: false, confirmedAt: "", noteUploaded: false }); }
-    else if (act === "genUpload") { s.general[i].uploaded = !s.general[i].uploaded; }
-    else if (act === "kmUpload") { s.kmDocs[i].uploaded = !s.kmDocs[i].uploaded; }
-    else if (act === "drawUpload") { s.reviewRounds[i].drawingsUploaded = !s.reviewRounds[i].drawingsUploaded; }
-    else if (act === "ppdApprove") { s.reviewRounds[i].ppdOutcome = "approved"; }
+      w.reviewDate.date = inp.value; w.reviewDate.confirmed = true; w.reviewDate.confirmedAt = daNow();
+    } else if (act === "meetingNote") { w.meetingNoteUploaded = !w.meetingNoteUploaded; }
+    else if (act === "pcNote") { w.preConsults[i].noteUploaded = !w.preConsults[i].noteUploaded; }
+    else if (act === "addPreConsult") { w.preConsults.push({ n: w.preConsults.length + 1, date: "", confirmed: false, confirmedAt: "", noteUploaded: false }); }
+    else if (act === "drawUpload") { w.reviewRounds[i].drawingsUploaded = !w.reviewRounds[i].drawingsUploaded; }
+    else if (act === "ppdApprove") { w.reviewRounds[i].ppdOutcome = "approved"; }
     else if (act === "ppdComment") {
       const ta = document.getElementById("s2-comment-" + i);
-      s.reviewRounds[i].comment = ta ? ta.value : "";
-      s.reviewRounds[i].ppdOutcome = "comment";
-      s.reviewRounds.push({ n: s.reviewRounds.length + 1, drawingsUploaded: false, ppdOutcome: null, comment: "" });
-    }
+      w.reviewRounds[i].comment = ta ? ta.value : "";
+      w.reviewRounds[i].ppdOutcome = "comment";
+      w.reviewRounds.push({ n: w.reviewRounds.length + 1, drawingsUploaded: false, ppdOutcome: null, comment: "" });
+    } else if (act === "submittedDraw") { w.submitted.drawingsUploaded = !w.submitted.drawingsUploaded; }
+    else if (act === "submittedAck") { w.submitted.ackUploaded = !w.submitted.ackUploaded; }
     renderStep2(selectedStepIndex);
   }
 
