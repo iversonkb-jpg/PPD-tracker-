@@ -592,7 +592,7 @@
   function mkmSave() {
     try {
       if (!activeSteps.length) return;
-      const data = { da: activeSteps[0] && activeSteps[0].da, s2: activeSteps[1] && activeSteps[1].s2, s3: activeSteps[2] && activeSteps[2].s3 };
+      const data = { da: activeSteps[0] && activeSteps[0].da, s2: activeSteps[1] && activeSteps[1].s2, s3: activeSteps[2] && activeSteps[2].s3, s4: activeSteps[3] && activeSteps[3].s4 };
       localStorage.setItem(mkmProjectKey(), JSON.stringify(data));
     } catch (e) { /* storage unavailable — ignore */ }
   }
@@ -604,6 +604,7 @@
       if (data.da && activeSteps[0]) activeSteps[0].da = data.da;
       if (data.s2 && activeSteps[1]) activeSteps[1].s2 = data.s2;
       if (data.s3 && activeSteps[2]) activeSteps[2].s3 = data.s3;
+      if (data.s4 && activeSteps[3]) activeSteps[3].s4 = data.s4;
     } catch (e) { /* ignore */ }
   }
 
@@ -1086,6 +1087,96 @@
     renderStep3(selectedStepIndex);
   }
 
+  /* ---------- Master KM · Step 4 — Hardcopy Submission (native, MKM-only) ----------
+     KM only — every BP row from the shared step is removed. State on activeSteps[3].s4. */
+  function seedStep4() {
+    return {
+      sign: { date: "", confirmed: false, confirmedAt: "" },
+      consent: { date: "", confirmed: false, confirmedAt: "" },
+      qrUploaded: false,
+      receipt: { uploaded: false, date: "", confirmed: false, confirmedAt: "" },
+      ack: { uploaded: false, date: "", confirmed: false, confirmedAt: "" }
+    };
+  }
+  function s4Date(obj, id, confirmAct, cancelAct) {
+    if (obj.confirmed) {
+      return '<div class="da-field-row"><input type="date" class="sd-input pc-date" value="' + esc(obj.date) + '" disabled>' +
+        '<span class="da-stamp"><span class="da-dot"></span><b>Confirmed</b> <span class="da-time">' + esc(obj.confirmedAt) + "</span></span></div>";
+    }
+    return '<div class="da-field-row"><input type="date" class="sd-input pc-date" id="' + id + '"></div>' +
+      '<div class="sd-actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-s4="' + confirmAct + '">Confirm</button>' +
+      '<button type="button" class="btn btn-secondary" data-s4="' + cancelAct + '">Cancel</button></div>';
+  }
+  function s4Upload(label, uploaded, act) {
+    return '<div class="da-item"><span>' + esc(label) + "</span>" +
+      (uploaded ? '<span class="da-stamp"><span class="da-dot"></span><b>Uploaded</b></span>'
+                : '<button type="button" class="btn btn-secondary" style="padding:7px 16px;font-size:12.5px" data-s4="' + act + '">Upload</button>') + "</div>";
+  }
+  function s4Html(s) {
+    const done = s.sign.confirmed && s.consent.confirmed && s.qrUploaded &&
+      s.receipt.uploaded && s.receipt.confirmed && s.ack.uploaded && s.ack.confirmed;
+    let h = '<div class="pc-head-card" style="margin-bottom:14px">' +
+      '<div style="display:flex;gap:14px;align-items:center">' +
+        '<div class="sd-badge">4</div>' +
+        '<div><div class="sd-eyebrow">STEP 4 OF ' + MKM_NODES.length + "</div>" +
+        '<h3 style="margin:0;font-family:var(--font-serif);font-size:20px;color:var(--ink)">Hardcopy Submission</h3></div>' +
+      "</div>" +
+      '<span class="st-chip ' + (done ? "st-completed" : "st-in-progress") + '">' + (done ? "Completed" : "In Progress") + "</span></div>";
+
+    h += '<section class="pc-card"><h4 class="pc-card-title">Hardcopy Signing &amp; Consent</h4>' +
+      '<div class="pc-q"><div class="pc-q-label">4.1 PPD to set the date for hardcopies signing by Director/CDO</div>' +
+        '<div class="pc-hint" style="margin-top:0;margin-bottom:6px">Guide: within 2 weeks after online submission.</div>' +
+        s4Date(s.sign, "s4-sign", "signConfirm", "signCancel") + "</div>" +
+      '<div class="pc-q"><div class="pc-q-label">4.2 Consultants to update Authority Consent to submit hardcopy</div>' +
+        s4Date(s.consent, "s4-consent", "consentConfirm", "consentCancel") + "</div>" +
+      '<div class="pc-q"><div class="pc-q-label">4.3 Consultant to upload QR code</div>' +
+        '<div class="pc-hint" style="margin-top:0;margin-bottom:6px">System links to the Payment Requisition flow to generate the notification letter template.</div>' +
+        s4Upload("QR code", s.qrUploaded, "qrUpload") + "</div></section>";
+
+    h += '<section class="pc-card"><h4 class="pc-card-title">Payment Requisition</h4>' +
+      '<div class="pc-q" style="margin-top:0"><div class="pc-q-label">4.4 Raise PRF</div>' +
+      '<button type="button" class="btn btn-secondary" title="Coming soon" data-s4="prf">View PRF</button></div></section>';
+
+    h += '<section class="pc-card"><h4 class="pc-card-title">Receipt &amp; Submission</h4>' +
+      '<div class="pc-q" style="margin-top:0"><div class="pc-q-label">4.5 Consultant to upload official receipt issued by OSC</div>' +
+        s4Upload("Official receipt (OSC)", s.receipt.uploaded, "receiptUpload") +
+        s4Date(s.receipt, "s4-receipt", "receiptConfirm", "receiptCancel") + "</div>" +
+      '<div class="pc-q"><div class="pc-q-label">4.6 Consultant to upload acknowledged copy of KM submission and submitted hardcopy doc/drawings</div>' +
+        s4Upload("Acknowledged copy + submitted hardcopy", s.ack.uploaded, "ackUpload") +
+        s4Date(s.ack, "s4-ack", "ackConfirm", "ackCancel") + "</div>" +
+      '<p class="sd-note">Once 4.2, 4.3 and 4.4 are done, the system notifies/reminds Consultants to submit hardcopy.</p></section>';
+    return h;
+  }
+  function renderStep4(index) {
+    const content = masterBody.querySelector("#mkmStepContent");
+    if (!content) return;
+    const step = activeSteps[index];
+    if (!step.s4) step.s4 = seedStep4();
+    content.innerHTML = s4Html(step.s4);
+    mkmSave();
+  }
+  function handleS4Click(el) {
+    const step = activeSteps[selectedStepIndex];
+    if (!step) return;
+    if (!step.s4) step.s4 = seedStep4();
+    const s = step.s4, act = el.getAttribute("data-s4");
+    function confirmDate(obj, id) {
+      const inp = document.getElementById(id);
+      if (!inp || !inp.value) { alert("Please pick a date first."); return false; }
+      obj.date = inp.value; obj.confirmed = true; obj.confirmedAt = daNow(); return true;
+    }
+    if (act === "prf") return;   // placeholder
+    if (act === "signCancel" || act === "consentCancel" || act === "receiptCancel" || act === "ackCancel") { renderStep4(selectedStepIndex); return; }
+    if (act === "signConfirm") { if (!confirmDate(s.sign, "s4-sign")) return; }
+    else if (act === "consentConfirm") { if (!confirmDate(s.consent, "s4-consent")) return; }
+    else if (act === "receiptConfirm") { if (!confirmDate(s.receipt, "s4-receipt")) return; }
+    else if (act === "ackConfirm") { if (!confirmDate(s.ack, "s4-ack")) return; }
+    else if (act === "qrUpload") { s.qrUploaded = !s.qrUploaded; }
+    else if (act === "receiptUpload") { s.receipt.uploaded = !s.receipt.uploaded; }
+    else if (act === "ackUpload") { s.ack.uploaded = !s.ack.uploaded; }
+    renderStep4(selectedStepIndex);
+  }
+
   // Fills the hooks in content/step-dashboard.html (must already be injected).
   function renderDashboard() {
     if (!activeSteps.length) return;
@@ -1238,8 +1329,13 @@
       ensureStepDetailHome();
       stepDetail.hidden = true;
       renderStep3(index);
+    } else if (index === 3) {
+      // MKM Step 4 — native Hardcopy Submission (MKM-only, KM only)
+      ensureStepDetailHome();
+      stepDetail.hidden = true;
+      renderStep4(index);
     } else {
-      // Steps 4–7 — reuse the shared step working page, hosted inside MKM
+      // Steps 5–7 — reuse the shared step working page, hosted inside MKM
       content.innerHTML = "";
       content.appendChild(stepDetail);   // borrow the shared step block
       fillStepHeader(index);
@@ -1271,6 +1367,8 @@
       if (s2) { handleS2Click(s2); return; }
       const s3 = e.target.closest("[data-s3]");
       if (s3) { handleS3Click(s3); return; }
+      const s4 = e.target.closest("[data-s4]");
+      if (s4) { handleS4Click(s4); return; }
       const node = e.target.closest(".dash-svg-node[data-dash-step]");
       if (!node || !activeSteps.length) return;
       openMkmStep(Number(node.getAttribute("data-dash-step")));
