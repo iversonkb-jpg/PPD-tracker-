@@ -739,6 +739,145 @@
     renderDesignApproval(selectedStepIndex);
   }
 
+  /* ---------- Master KM · Step 2 — Pre-Consultation (native, MKM-only) ----------
+     Changes vs the shared KM/BP step 2: no BP checklist; external agency list
+     adds JAS + JPBD and drops BOMBA; pre-consultation is repeatable; and 2.5 is
+     a submission-review loop (upload → PPD review/comment → revise → repeat until
+     PPD approves). State lives on activeSteps[1].s2. */
+  function seedStep2() {
+    const internal = [
+      { code: "OSC", name: "One Stop Centre" }, { code: "JPP", name: "Jabatan Perancangan Pembangunan" },
+      { code: "JKB", name: "Jabatan Kawalan Bangunan" }, { code: "JK", name: "Jabatan Kejuruteraan" },
+      { code: "JPPH", name: "Jabatan Penilaian dan Perkhidmatan Hartanah" }, { code: "JL", name: "Jabatan Landskap" },
+      { code: "JKP", name: "Jabatan Kesihatan & Persekitaran" }, { code: "COB", name: "Unit Pesuruhjaya Bangunan" }
+    ];
+    const external = [
+      { code: "TNB", name: "Tenaga Nasional Berhad" }, { code: "IWK", name: "Indah Water Konsortium" },
+      { code: "JPS", name: "Jabatan Pengaliran & Saliran" }, { code: "JKR", name: "Jabatan Kerja Raya" },
+      { code: "PTD", name: "Pejabat Daerah Tanah" }, { code: "SKMM", name: "Suruhanjaya Komunikasi & Multimedia Malaysia" },
+      { code: "JMG", name: "Jabatan Mineral dan Galian" }, { code: "JAS", name: "Jabatan Alam Sekitar" },
+      { code: "JPBD", name: "PLANMalaysia (Jabatan Perancangan Bandar & Desa)" }
+    ];
+    const gen = (typeof GENERAL_DOCS_SEED !== "undefined" ? GENERAL_DOCS_SEED : []).map(function (g) { return { title: g.title, uploaded: false }; });
+    const kmDocs = internal.concat(external).map(function (a) { return { code: a.code, name: a.name, uploaded: false }; });
+    return {
+      agencies: { internal: internal, external: external },
+      preConsults: [ { n: 1, date: "", confirmed: false, confirmedAt: "", noteUploaded: false } ],
+      general: gen,
+      kmDocs: kmDocs,
+      reviewRounds: [ { n: 1, drawingsUploaded: false, ppdOutcome: null, comment: "" } ]
+    };
+  }
+  function s2UploadItem(label, uploaded, action, i) {
+    return '<div class="da-item"><span>' + esc(label) + "</span>" +
+      (uploaded ? '<span class="da-stamp"><span class="da-dot"></span><b>Uploaded</b></span>'
+                : '<button type="button" class="btn btn-secondary" style="padding:7px 16px;font-size:12.5px" data-s2="' + action + '" data-i="' + i + '">Upload</button>') + "</div>";
+  }
+  function s2DateBlock(obj, i) {
+    if (obj.confirmed) {
+      return '<div class="da-field-row"><input type="date" class="sd-input pc-date" value="' + esc(obj.date) + '" disabled>' +
+        '<span class="da-stamp"><span class="da-dot"></span><b>Confirmed</b> <span class="da-time">' + esc(obj.confirmedAt) + "</span></span></div>";
+    }
+    return '<div class="da-field-row"><input type="date" class="sd-input pc-date" id="s2-pc-' + i + '"></div>' +
+      '<div class="sd-actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-s2="pcConfirm" data-i="' + i + '">Confirm</button>' +
+      '<button type="button" class="btn btn-secondary" data-s2="pcCancel">Cancel</button></div>';
+  }
+  function s2AgencyGrid(list) {
+    return '<div class="km-grid">' + list.map(function (a) {
+      return '<div class="km-card"><div class="km-card-body"><div class="km-card-label"><div class="km-code">' + esc(a.code) + '</div><div class="km-desc">' + esc(a.name) + '</div></div><div class="km-card-right"><span class="st-chip st-na">Not Started</span></div></div></div>';
+    }).join("") + "</div>";
+  }
+  function s2Html(s) {
+    const approved = s.reviewRounds.some(function (r) { return r.ppdOutcome === "approved"; });
+    let h = '<div class="pc-head-card" style="margin-bottom:6px">' +
+      '<div style="display:flex;gap:14px;align-items:center">' +
+        '<div class="sd-badge">2</div>' +
+        '<div><div class="sd-eyebrow">STEP 2 OF ' + MKM_NODES.length + "</div>" +
+        '<h3 style="margin:0;font-family:var(--font-serif);font-size:20px;color:var(--ink)">Pre-Consultation</h3></div>' +
+      "</div>" +
+      '<span class="st-chip ' + (approved ? "st-completed" : "st-in-progress") + '">' + (approved ? "Completed" : "In Progress") + "</span></div>";
+
+    // 2.1 Pre-Consultation (repeatable)
+    const pcs = s.preConsults.map(function (p, i) {
+      return '<div class="da-subcard' + (p.confirmed ? " da-ok" : "") + '">' +
+        '<div class="da-sub-title">Pre-Consultation ' + p.n + " " + (p.confirmed ? '<span class="st-chip st-completed">Date confirmed</span>' : '<span class="st-chip st-na">Pending</span>') + "</div>" +
+        '<div class="pc-q-label" style="margin-bottom:4px">2.1 Date of pre-consultation (by Consultant)</div>' +
+        s2DateBlock(p, i) +
+        '<div style="height:8px"></div>' +
+        '<div class="pc-q-label" style="margin-bottom:0">2.2 Pre-consultation comments / notes (if any)</div>' +
+        s2UploadItem("Comments / notes", p.noteUploaded, "pcNote", i) + "</div>";
+    }).join("");
+    h += '<section class="pc-card"><h4 class="pc-card-title">2.1 Pre-Consultation</h4>' +
+      '<div class="pc-hint" style="margin-top:0">Set the pre-consultation date and upload any notes. Add another round if a second pre-consultation is needed.</div>' +
+      pcs + '<button type="button" class="da-add" data-s2="addPreConsult">＋ Add Pre-Consultation ' + (s.preConsults.length + 1) + "</button></section>";
+
+    // 2.2 Upload — General
+    h += '<section class="pc-card"><h4 class="pc-card-title">2.2 Upload — General Checklist</h4>' +
+      s.general.map(function (g, i) { return s2UploadItem(g.title, g.uploaded, "genUpload", i); }).join("") + "</section>";
+
+    // 2.3 Upload — KM Checklist (no BP checklist)
+    h += '<section class="pc-card"><h4 class="pc-card-title">2.3 Upload — KM Checklist</h4>' +
+      '<div class="pc-hint" style="margin-top:0">Upload each authority/agency document required for the Kebenaran Merancang (KM) checklist.</div>' +
+      s.kmDocs.map(function (a, i) { return s2UploadItem(a.code + " · " + a.name, a.uploaded, "kmUpload", i); }).join("") + "</section>";
+
+    // 2.4 Authority & Agency board
+    h += '<section class="pc-card"><h4 class="pc-card-title">2.4 Authority &amp; Agency</h4>' +
+      '<div class="km-section-title" style="margin-top:6px">Internal Agency</div>' + s2AgencyGrid(s.agencies.internal) +
+      '<div class="km-section-title" style="margin-top:14px">External Agency</div>' + s2AgencyGrid(s.agencies.external) + "</section>";
+
+    // 2.5 Submission review loop
+    const rounds = s.reviewRounds.map(function (r, i) {
+      const tag = r.ppdOutcome === "approved" ? '<span class="st-chip st-completed">Approved for submission ✓</span>'
+        : r.ppdOutcome === "comment" ? '<span class="st-chip st-alarming">Revision requested</span>'
+        : '<span class="st-chip st-na">In review</span>';
+      let body = '<div class="da-sub-title">' + (i === 0 ? "Submission" : "Revised Submission " + r.n) + " " + tag + "</div>" +
+        s2UploadItem("Submission drawings / documents", r.drawingsUploaded, "drawUpload", i);
+      if (r.drawingsUploaded && r.ppdOutcome === null) {
+        body += '<div class="pc-q-label" style="margin-top:12px;margin-bottom:6px">PPD review &amp; comment</div>' +
+          '<textarea class="sd-input" id="s2-comment-' + i + '" rows="2" placeholder="PPD comments (optional if approving)…"></textarea>' +
+          '<div class="sd-actions" style="margin-top:10px"><button type="button" class="btn btn-primary" data-s2="ppdApprove" data-i="' + i + '">Approve for submission</button>' +
+          '<button type="button" class="btn btn-secondary" data-s2="ppdComment" data-i="' + i + '">Comment (needs revision)</button></div>';
+      }
+      if (r.ppdOutcome === "comment") body += '<div class="da-routing warn" style="margin-top:10px">↻ Revision requested' + (r.comment ? ": " + esc(r.comment) : "") + ". Consultant to upload a revised submission below.</div>";
+      if (r.ppdOutcome === "approved") body += '<div class="da-routing ok" style="margin-top:10px">✓ PPD approved for submission — proceed to Step 3.</div>';
+      return '<div class="da-subcard' + (r.ppdOutcome === "approved" ? " da-ok" : "") + '">' + body + "</div>";
+    }).join("");
+    h += '<section class="pc-card"><h4 class="pc-card-title">2.5 Submission Review</h4>' +
+      '<div class="pc-hint" style="margin-top:0">Consultant uploads submission drawings/documents; PPD reviews and either approves or comments. If commented, the consultant uploads a revised submission — repeat until PPD approves.</div>' +
+      rounds + "</section>";
+    return h;
+  }
+  function renderStep2(index) {
+    const content = masterBody.querySelector("#mkmStepContent");
+    if (!content) return;
+    const step = activeSteps[index];
+    if (!step.s2) step.s2 = seedStep2();
+    content.innerHTML = s2Html(step.s2);
+  }
+  function handleS2Click(el) {
+    const step = activeSteps[selectedStepIndex];
+    if (!step || !step.s2) return;
+    const s = step.s2, act = el.getAttribute("data-s2"), i = +el.getAttribute("data-i");
+    if (act === "pcCancel") { renderStep2(selectedStepIndex); return; }
+    if (act === "pcConfirm") {
+      const inp = document.getElementById("s2-pc-" + i);
+      if (!inp || !inp.value) { alert("Please pick a date first."); return; }
+      s.preConsults[i].date = inp.value; s.preConsults[i].confirmed = true; s.preConsults[i].confirmedAt = daNow();
+    } else if (act === "pcNote") { s.preConsults[i].noteUploaded = !s.preConsults[i].noteUploaded; }
+    else if (act === "addPreConsult") { s.preConsults.push({ n: s.preConsults.length + 1, date: "", confirmed: false, confirmedAt: "", noteUploaded: false }); }
+    else if (act === "genUpload") { s.general[i].uploaded = !s.general[i].uploaded; }
+    else if (act === "kmUpload") { s.kmDocs[i].uploaded = !s.kmDocs[i].uploaded; }
+    else if (act === "drawUpload") { s.reviewRounds[i].drawingsUploaded = !s.reviewRounds[i].drawingsUploaded; }
+    else if (act === "ppdApprove") { s.reviewRounds[i].ppdOutcome = "approved"; }
+    else if (act === "ppdComment") {
+      const ta = document.getElementById("s2-comment-" + i);
+      s.reviewRounds[i].comment = ta ? ta.value : "";
+      s.reviewRounds[i].ppdOutcome = "comment";
+      s.reviewRounds.push({ n: s.reviewRounds.length + 1, drawingsUploaded: false, ppdOutcome: null, comment: "" });
+    }
+    renderStep2(selectedStepIndex);
+  }
+
   // Fills the hooks in content/step-dashboard.html (must already be injected).
   function renderDashboard() {
     if (!activeSteps.length) return;
@@ -880,8 +1019,13 @@
       ensureStepDetailHome();
       stepDetail.hidden = true;
       renderDesignApproval(index);
+    } else if (index === 1) {
+      // MKM Step 2 — native Pre-Consultation page (MKM-only variant)
+      ensureStepDetailHome();
+      stepDetail.hidden = true;
+      renderStep2(index);
     } else {
-      // Steps 2–7 — reuse the shared step working page, hosted inside MKM
+      // Steps 3–7 — reuse the shared step working page, hosted inside MKM
       content.innerHTML = "";
       content.appendChild(stepDetail);   // borrow the shared step block
       fillStepHeader(index);
@@ -909,6 +1053,8 @@
       if (e.target.closest("[data-mkm-back]")) { closeMkmStep(); return; }
       const da = e.target.closest("[data-da]");
       if (da && da.tagName !== "INPUT") { handleDaClick(da); return; }   // radios handled on change
+      const s2 = e.target.closest("[data-s2]");
+      if (s2) { handleS2Click(s2); return; }
       const node = e.target.closest(".dash-svg-node[data-dash-step]");
       if (!node || !activeSteps.length) return;
       openMkmStep(Number(node.getAttribute("data-dash-step")));
