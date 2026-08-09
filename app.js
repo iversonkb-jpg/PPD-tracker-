@@ -1397,9 +1397,9 @@
       nodes: [
         { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "link", heading: "Approved KM", linkLabel: "Link to approved KM (auto-linked from MKM 7.4)" },
         { n: 2, id: "ew", label: "Earthwork", col: 1, lane: -1, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "workflow", heading: "Earthwork" },
-        { n: 3, id: "rd", label: "R&D", col: 1, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 4, id: "sl", label: "Street Lighting", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 5, id: "ls", label: "Landscape", col: 2, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+        { n: 3, id: "rd", label: "R&D", col: 1, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "workflow", heading: "R&D" },
+        { n: 4, id: "sl", label: "Street Lighting", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "workflow", heading: "Street Lighting" },
+        { n: 5, id: "ls", label: "Landscape", col: 2, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "workflow", heading: "Landscape" }
       ], edges: [{ from: "km", to: "ew" }, { from: "km", to: "rd" }, { from: "rd", to: "sl" }, { from: "rd", to: "ls" }] },
     { id: "jkr", tab: "JKR", title: "JKR — Road Safety", desc: "TIA and RSA stages in sequence.",
       nodes: [
@@ -1630,48 +1630,49 @@
     return '<h4 class="pc-card-title" style="font-size:19px">Approved Environmental Impact Assessment Report</h4>' +
       '<div class="if-linkrow"><a href="#" onclick="return false">Link to approved report (auto-linked from MKM JAS 6.1)</a><span style="font-weight:700">' + esc(w.date || "—") + "</span></div>";
   }
-  function empHtml(w) {
+  function empHtml(w, P) {
+    P = P || 2;   // section-number prefix (step number): 2.x for EMP, 3.x for R&D, etc.
     const rounds = w.rounds, subs = w.submissions;
     const approved = subs.some(function (s) { return s.status === "approved"; });
     let h = '<section class="pc-card"><h4 class="pc-card-title">Pre-Consultation</h4>';
     h += rounds.map(function (r, i) {
       return '<div class="if-card ' + (r.confirmed ? "ok" : "") + '"><div class="if-title">Pre-Consultation ' + r.n + " " +
         (r.confirmed ? '<span class="st-chip st-completed">Confirmed</span>' : '<span class="st-chip st-na">Pending</span>') + "</div>" +
-        '<div class="pc-q-label" style="margin-bottom:6px">2.1 Date of pre-consultation (by Consultant)</div>' +
+        '<div class="pc-q-label" style="margin-bottom:6px">' + P + '.1 Date of pre-consultation (by Consultant)</div>' +
         (r.confirmed
           ? '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><input type="date" class="sd-input" style="max-width:240px" value="' + esc(r.date) + '" disabled><span class="if-stamp"><span class="if-dot"></span><b>Confirmed</b> <span class="if-time">' + esc(r.confirmedAt) + "</span></span></div>"
           : '<input type="date" class="sd-input" style="max-width:240px" id="if-pcdate' + i + '"><div class="sd-actions" style="margin-top:12px"><button class="btn btn-primary" data-infra-act="pcConfirm" data-i="' + i + '">Confirm</button><button class="btn btn-secondary" data-infra-act="cancel">Cancel</button></div>') +
-        '<div class="pc-q-label" style="margin:14px 0 6px">2.2 Pre-consultation comments / notes (if any)</div>' +
+        '<div class="pc-q-label" style="margin:14px 0 6px">' + P + '.2 Pre-consultation comments / notes (if any)</div>' +
         ifUpload("Comments / notes", r.notesFile, "pcUpload", i) + "</div>";
     }).join("");
     h += '<button class="if-add" data-infra-act="pcAdd">＋ Add Pre-Consultation ' + (rounds.length + 1) + "</button></section>";
 
     h += '<section class="pc-card"><h4 class="pc-card-title">Meeting &amp; Review</h4>' +
-      '<div class="pc-q-label">2.3 Consultant to upload meeting note/sketch (if meeting with PPD)</div>' + ifUpload("Meeting note / sketch", w.meetingNoteFile, "meetingNote", 0) +
-      '<div class="pc-q-label" style="margin-top:16px">2.4 PPD to set date for Consultant to upload revised drawings for review</div>' +
+      '<div class="pc-q-label">' + P + '.3 Consultant to upload meeting note/sketch (if meeting with PPD)</div>' + ifUpload("Meeting note / sketch", w.meetingNoteFile, "meetingNote", 0) +
+      '<div class="pc-q-label" style="margin-top:16px">' + P + '.4 PPD to set date for Consultant to upload revised drawings for review</div>' +
       (w.revise.confirmed
         ? '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><input type="date" class="sd-input" style="max-width:240px" value="' + esc(w.revise.date) + '" disabled><span class="if-stamp"><span class="if-dot"></span><b>Confirmed</b> <span class="if-time">' + esc(w.revise.confirmedAt) + "</span></span></div>"
         : '<input type="date" class="sd-input" style="max-width:240px" id="if-revdate"><div class="sd-actions" style="margin-top:12px"><button class="btn btn-primary" data-infra-act="reviseConfirm">Confirm</button><button class="btn btn-secondary" data-infra-act="cancel">Cancel</button></div>') +
       '<div class="pc-hint">System will notify Consultant in their task list.</div>' +
-      '<div class="pc-q-label" style="margin-top:16px">2.5 Submission review — upload, PPD review &amp; comment, revise until approved</div>';
+      '<div class="pc-q-label" style="margin-top:16px">' + P + '.5 Submission review — upload, PPD review &amp; comment, revise until approved</div>';
     h += subs.map(function (s, i) {
       const tag = s.status === "approved" ? '<span class="st-chip st-completed">Approved</span>' : s.status === "revision" ? '<span class="st-chip st-alarming">Revision requested</span>' : '<span class="st-chip st-na">In review</span>';
       let b = '<div class="if-card ' + (s.status === "approved" ? "ok" : "") + '"><div class="if-title">' + (s.n === 1 ? "Submission" : "Revised Submission " + s.n) + " " + tag + "</div>" + ifUpload("Submission drawings / documents", s.file, "subUpload", i);
       if (s.file && s.status === "in-review") b += '<div class="sd-actions" style="margin-top:10px"><button class="btn btn-primary" data-infra-act="subApprove" data-i="' + i + '">PPD approve</button><button class="btn btn-secondary" data-infra-act="subRevise" data-i="' + i + '">Request revision</button></div>';
       if (s.status === "revision") b += '<div class="if-routing warn">↻ Revision requested. Consultant to upload a revised submission below.</div>';
-      if (s.status === "approved") b += '<div class="if-routing ok">✓ Approved by PPD — 2.6 Submitted Documents unlocked.</div>';
+      if (s.status === "approved") b += '<div class="if-routing ok">✓ Approved by PPD — ' + P + '.6 Submitted Documents unlocked.</div>';
       return b + "</div>";
     }).join("") + "</section>";
 
-    h += '<section class="pc-card"><h4 class="pc-card-title">2.6 Submitted Documents</h4>' +
-      '<div class="pc-hint" style="margin-top:0">' + (approved ? "PPD approved the submission in 2.5 — upload the submitted set and acknowledgement." : "Available after PPD approves the submission in 2.5.") + "</div>" +
+    h += '<section class="pc-card"><h4 class="pc-card-title">' + P + '.6 Submitted Documents</h4>' +
+      '<div class="pc-hint" style="margin-top:0">' + (approved ? "PPD approved the submission in " + P + ".5 — upload the submitted set and acknowledgement." : "Available after PPD approves the submission in " + P + ".5.") + "</div>" +
       '<div style="' + (approved ? "" : "opacity:.45;pointer-events:none") + '">' + ifUpload("Submitted drawings / documents", w.submitted.docsFile, "submittedDocs", 0) + ifUpload("Acknowledgement (from authority)", w.submitted.ackFile, "submittedAck", 0) + "</div></section>";
 
     h += '<section class="pc-card"><h4 class="pc-card-title">Clearance</h4>';
     h += w.clearance.map(function (c, i) {
       return '<div class="' + (i > 0 ? "if-card" : "") + '">' +
         (i > 0 ? '<div class="if-title">Rev ' + c.rev + " " + (c.submitted ? '<span class="st-chip st-completed">Submitted</span>' : '<span class="st-chip st-na">Draft</span>') + "</div>" : "") +
-        '<div class="pc-q-label">2.7 Consultant to upload:' + (i > 0 ? " (rev " + c.rev + ")" : "") + "</div>" +
+        '<div class="pc-q-label">' + P + '.7 Consultant to upload:' + (i > 0 ? " (rev " + c.rev + ")" : "") + "</div>" +
         '<div class="pc-hint" style="margin-top:0;margin-bottom:8px">' + INFRA_LETTER_TYPES.join(", ") + "</div>" +
         '<select class="sd-input" ' + (c.submitted ? "disabled" : "") + ' data-infra-change="clrType" data-i="' + i + '"><option value="" ' + (c.type ? "" : "selected") + ' disabled>Select letter type…</option>' + INFRA_LETTER_TYPES.map(function (t) { return "<option " + (c.type === t ? "selected" : "") + ">" + esc(t) + "</option>"; }).join("") + "</select>" +
         '<div style="display:flex;gap:12px;align-items:center;margin:10px 0;flex-wrap:wrap">' +
@@ -1683,20 +1684,21 @@
         (c.submitted ? ifStamp(c.submittedAt) : '<div class="sd-actions" style="margin-top:12px"><button class="btn btn-primary" data-infra-act="clrSubmit" data-i="' + i + '">Submit</button></div>') + "</div>";
     }).join("") + "</section>";
 
-    return h + infraAppealHtml(w);
+    return h + infraAppealHtml(w, P);
   }
-  function infraAppealHtml(w) {
+  function infraAppealHtml(w, P) {
+    P = P || 2;
     const A = w.appeal, a = A.list[A.active];
     const isAppeal = a.cls === "Appeal";
     const meetingNeeded = a.ii.req === "Meeting required";
     const nextRev = w.clearance.length;
     let h = '<section class="pc-card"><h4 class="pc-card-title">Classification &amp; Appeal (PPD Internal Usage Only)</h4>';
     h += '<div class="if-wtabs">' + A.list.map(function (x, i) { return '<button class="if-wtab ' + (i === A.active ? "on" : "") + '" data-infra-act="apTab" data-i="' + i + '">Appeal ' + x.n + "</button>"; }).join("") + '<button class="if-wtab" data-infra-act="apAdd">＋ Appeal</button></div>';
-    h += '<div class="pc-q-label">2.8 Appeal / Compliance classification</div>' +
+    h += '<div class="pc-q-label">' + P + '.8 Appeal / Compliance classification</div>' +
       '<div class="if-2col"><select class="sd-input" data-infra-change="apCls"><option value="" ' + (a.cls ? "" : "selected") + ' disabled>Select classification…</option>' + INFRA_CLS_TYPES.map(function (t) { return "<option " + (a.cls === t ? "selected" : "") + ">" + esc(t) + "</option>"; }).join("") + "</select>" +
       '<select class="sd-input" data-infra-change="apImpact"><option value="" ' + (a.impact ? "" : "selected") + ' disabled>Select impact…</option>' + INFRA_IMPACT_TYPES.map(function (t) { return "<option " + (a.impact === t ? "selected" : "") + ">" + esc(t) + "</option>"; }).join("") + "</select></div>";
     if (!isAppeal) {
-      h += '<div class="pc-hint" style="margin-top:12px">' + (a.cls === "Compliance" ? "Classified as Compliance — consultant to comply and upload the revised outcome as 2.7 rev " + nextRev + "." : "Select “Appeal” to open the internal appeal workflow below.") + "</div>";
+      h += '<div class="pc-hint" style="margin-top:12px">' + (a.cls === "Compliance" ? "Classified as Compliance — consultant to comply and upload the revised outcome as " + P + ".7 rev " + nextRev + "." : "Select “Appeal” to open the internal appeal workflow below.") + "</div>";
     } else {
       h += '<div class="pc-q-label" style="margin-top:16px">If to appeal (with time/cost impact to AP/launch date):</div><div class="if-caps">Internal PPD use only</div>';
       h += '<div class="if-roman">i. HOD-PPD to upload the proposed adjusted AP/Launch timeline and action plan:</div>' +
@@ -1712,10 +1714,10 @@
         (a.iv.doc ? '<span class="if-chip">📄 ' + esc(a.iv.doc) + "</span>" : '<label class="if-add" style="max-width:420px;display:inline-block;text-align:center;cursor:pointer">⤒ Upload Document<input type="file" data-infra-file="apUploadIV" style="display:none"></label>') +
         '<div class="sd-actions" style="margin-top:14px;flex-wrap:wrap"><button class="btn btn-primary" data-infra-act="apOutcome" data-v="approved">Approve by CDO</button><button class="btn btn-secondary" data-infra-act="apOutcome" data-v="revise">To revise (with remarks)</button><button class="btn btn-secondary" style="color:#b4232a;border-color:#e5a7aa" data-infra-act="apOutcome" data-v="reject">Reject (to comply)</button></div>' +
         '<div class="pc-q-label" style="margin-top:14px">CDO Comments</div><textarea class="sd-input" rows="3" placeholder="Enter comments here…" data-infra-input="apComments">' + esc(a.iv.comments) + "</textarea>" +
-        (a.iv.outcome === "approved" ? '<div class="if-routing ok">✓ Approved by CDO — proceed to 2.9 and upload the outcome as 2.7 rev ' + nextRev + ".</div>" : "") +
+        (a.iv.outcome === "approved" ? '<div class="if-routing ok">✓ Approved by CDO — proceed to ' + P + '.9 and upload the outcome as ' + P + '.7 rev ' + nextRev + ".</div>" : "") +
         (a.iv.outcome === "revise" ? '<div class="if-routing warn">↻ To revise — step i has reopened above; update the timeline / action plan with CDO remarks and resubmit.</div>' : "") +
-        (a.iv.outcome === "reject" ? '<div class="if-routing warn">↻ Appeal rejected — to comply. Consultant to comply and upload the outcome as 2.7 rev ' + nextRev + ".</div>" : "") + "</div>";
-      if (a.ii.submitted && !meetingNeeded) h += '<div class="pc-hint" style="margin-top:12px">No meeting required — record the outcome above, then proceed to 2.9 (upload as 2.7 rev ' + nextRev + ").</div>";
+        (a.iv.outcome === "reject" ? '<div class="if-routing warn">↻ Appeal rejected — to comply. Consultant to comply and upload the outcome as ' + P + '.7 rev ' + nextRev + ".</div>" : "") + "</div>";
+      if (a.ii.submitted && !meetingNeeded) h += '<div class="pc-hint" style="margin-top:12px">No meeting required — record the outcome above, then proceed to ' + P + '.9 (upload as ' + P + '.7 rev ' + nextRev + ").</div>";
     }
     return h + "</section>";
   }
@@ -1727,8 +1729,8 @@
     if (!n) { panelEl.innerHTML = ""; return; }
     let title, body;
     if (n.panel === "jas-eia") { title = "EIA — Approved Report"; body = eiaHtml(n.work); }
-    else if (n.panel === "jas-emp") { title = "EMP — Environmental Management Plan"; body = empHtml(n.work); }
-    else if (n.panel === "workflow") { title = n.heading || n.label; body = empHtml(n.work); }
+    else if (n.panel === "jas-emp") { title = "EMP — Environmental Management Plan"; body = empHtml(n.work, n.n); }
+    else if (n.panel === "workflow") { title = n.heading || n.label; body = empHtml(n.work, n.n); }
     else if (n.panel === "link") { title = n.heading || n.label; body = linkPanelHtml(n); }
     else { title = n.label; body = '<p class="sd-note">Working page for this step is coming next.</p>'; }
     panelEl.innerHTML = '<section class="pc-card" style="border-color:var(--brand-green);margin-top:14px">' +
