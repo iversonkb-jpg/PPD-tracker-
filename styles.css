@@ -1769,3 +1769,12 @@ body {
 .if-wtab.on { background: var(--white); border-color: var(--line); color: var(--brand-green-dark); }
 .if-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 760px) { .if-2col { grid-template-columns: 1fr; } }
+
+/* ---- Master Infra · interactive Master Plan ---- */
+.mp-wrap { position: relative; display: inline-block; max-width: 100%; margin-top: 4px; }
+.mp-img { display: block; max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 10px; }
+.mp-img[data-mp-edit="1"] { cursor: crosshair; }
+.mp-pin { position: absolute; transform: translate(-50%, -50%); width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: var(--font-sans); padding: 0; }
+.mp-pin:hover { filter: brightness(0.95); }
+.mp-empty { display: flex; align-items: center; justify-content: center; gap: 10px; border: 1.5px dashed var(--brand-green); border-radius: 10px; padding: 44px 20px; color: var(--brand-green-dark); font-weight: 700; background: var(--white); font-size: 14px; }
+.mp-empty:hover { background: var(--brand-green-light); }
