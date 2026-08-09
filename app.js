@@ -1396,7 +1396,7 @@
       desc: "After KM approval, Earthwork and R&D run concurrently. Street Lighting and Landscape follow R&D, concurrently with each other.",
       nodes: [
         { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "link", heading: "Approved KM", linkLabel: "Link to approved KM (auto-linked from MKM 7.4)" },
-        { n: 2, id: "ew", label: "Earthwork", col: 1, lane: -1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 2, id: "ew", label: "Earthwork", col: 1, lane: -1, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "workflow", heading: "Earthwork" },
         { n: 3, id: "rd", label: "R&D", col: 1, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 4, id: "sl", label: "Street Lighting", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 5, id: "ls", label: "Landscape", col: 2, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
@@ -1609,7 +1609,7 @@
     };
   }
   function infraEnsureWork(n) {
-    if (n.panel === "jas-emp") { if (!n.work) n.work = infraEmpDefault(); }
+    if (n.panel === "jas-emp" || n.panel === "workflow") { if (!n.work) n.work = infraEmpDefault(); }
     else if (n.panel === "jas-eia" || n.panel === "link") { if (!n.work) n.work = { date: "—" }; }
   }
   // Generic "approved document" link panel (e.g. Majlis KM Approval → MKM 7.4).
@@ -1728,6 +1728,7 @@
     let title, body;
     if (n.panel === "jas-eia") { title = "EIA — Approved Report"; body = eiaHtml(n.work); }
     else if (n.panel === "jas-emp") { title = "EMP — Environmental Management Plan"; body = empHtml(n.work); }
+    else if (n.panel === "workflow") { title = n.heading || n.label; body = empHtml(n.work); }
     else if (n.panel === "link") { title = n.heading || n.label; body = linkPanelHtml(n); }
     else { title = n.label; body = '<p class="sd-note">Working page for this step is coming next.</p>'; }
     panelEl.innerHTML = '<section class="pc-card" style="border-color:var(--brand-green);margin-top:14px">' +
