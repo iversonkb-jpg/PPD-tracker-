@@ -1401,7 +1401,7 @@
         { n: 4, id: "sl", label: "Street Lighting", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "workflow", heading: "Street Lighting" },
         { n: 5, id: "ls", label: "Landscape", col: 2, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "workflow", heading: "Landscape" }
       ], edges: [{ from: "km", to: "ew" }, { from: "km", to: "rd" }, { from: "rd", to: "sl" }, { from: "rd", to: "ls" }] },
-    { id: "jkr", tab: "JKR", title: "JKR — Road Safety", desc: "TIA and RSA stages in sequence.",
+    { id: "jkr", tab: "JKR", title: "JKR — Road Safety", desc: "TIA and RSA stages in sequence.", defaultPanel: "workflow",
       nodes: [
         { n: 1, id: "r1", label: "TIA, RSA 1 & 2", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 2, id: "r3", label: "RSA 3", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
@@ -1410,7 +1410,7 @@
         { n: 5, id: "s3", label: "RSA 4 Stage 3", col: 4, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 6, id: "r5", label: "RSA 5", col: 5, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
       ], edges: [{ from: "r1", to: "r3" }, { from: "r3", to: "s1" }, { from: "s1", to: "s2" }, { from: "s2", to: "s3" }, { from: "s3", to: "r5" }] },
-    { id: "iwk", tab: "IWK", title: "IWK — Sewerage (PDC)",
+    { id: "iwk", tab: "IWK", title: "IWK — Sewerage (PDC)", defaultPanel: "workflow",
       desc: "PDC 1–2, then two routes: with an STP, go through HAZOP and PDC 3–5 before PDC 6; with no STP, skip straight from PDC 2 to PDC 6. Both routes finish PDC 6 → 7 → 8.",
       nodes: [
         { n: 1, id: "p1", label: "PDC 1", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
@@ -1426,7 +1426,7 @@
         { from: "p1", to: "p2" }, { from: "p2", to: "hz", days: "with STP" },
         { from: "hz", to: "p3" }, { from: "p3", to: "p4" }, { from: "p4", to: "p5" }, { from: "p5", to: "p6" },
         { from: "p2", to: "p6", days: "no STP" }, { from: "p6", to: "p7" }, { from: "p7", to: "p8" }] },
-    { id: "ais", tab: "AIS", title: "AIS — Water Reticulation", desc: "Concept (MKM) and detail reticulation, then QT 1–11 in sequence.",
+    { id: "ais", tab: "AIS", title: "AIS — Water Reticulation", desc: "Concept (MKM) and detail reticulation, then QT 1–11 in sequence.", defaultPanel: "workflow",
       nodes: [
         { n: 1, id: "c", label: "Concept (MKM)", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 2, id: "dr", label: "Detail Reticulation", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
@@ -1608,9 +1608,16 @@
       appeal: { active: 0, list: [infraAppealBlank(1)] }
     };
   }
+  // Effective panel for a node: its own `panel`, else the flow's `defaultPanel`.
+  function infraPanelType(n) {
+    if (n.panel) return n.panel;
+    const f = infraCurFlow();
+    return (f && f.defaultPanel) || null;
+  }
   function infraEnsureWork(n) {
-    if (n.panel === "jas-emp" || n.panel === "workflow") { if (!n.work) n.work = infraEmpDefault(); }
-    else if (n.panel === "jas-eia" || n.panel === "link") { if (!n.work) n.work = { date: "—" }; }
+    const pt = infraPanelType(n);
+    if (pt === "jas-emp" || pt === "workflow") { if (!n.work) n.work = infraEmpDefault(); }
+    else if (pt === "jas-eia" || pt === "link") { if (!n.work) n.work = { date: "—" }; }
   }
   // Generic "approved document" link panel (e.g. Majlis KM Approval → MKM 7.4).
   // Driven by node.heading + node.linkLabel so adding one is a data change.
@@ -1728,10 +1735,11 @@
     const n = infraNode(infraPanelNode);
     if (!n) { panelEl.innerHTML = ""; return; }
     let title, body;
-    if (n.panel === "jas-eia") { title = "EIA — Approved Report"; body = eiaHtml(n.work); }
-    else if (n.panel === "jas-emp") { title = "EMP — Environmental Management Plan"; body = empHtml(n.work, n.n); }
-    else if (n.panel === "workflow") { title = n.heading || n.label; body = empHtml(n.work, n.n); }
-    else if (n.panel === "link") { title = n.heading || n.label; body = linkPanelHtml(n); }
+    const pt = infraPanelType(n);
+    if (pt === "jas-eia") { title = "EIA — Approved Report"; body = eiaHtml(n.work); }
+    else if (pt === "jas-emp") { title = "EMP — Environmental Management Plan"; body = empHtml(n.work, n.n); }
+    else if (pt === "workflow") { title = n.heading || n.label; body = empHtml(n.work, n.n); }
+    else if (pt === "link") { title = n.heading || n.label; body = linkPanelHtml(n); }
     else { title = n.label; body = '<p class="sd-note">Working page for this step is coming next.</p>'; }
     panelEl.innerHTML = '<section class="pc-card" style="border-color:var(--brand-green);margin-top:14px">' +
       '<div class="pc-head-card"><div class="pc-authority">' + esc(title) + "</div>" +
