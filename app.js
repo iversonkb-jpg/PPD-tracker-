@@ -1395,7 +1395,7 @@
     { id: "majlis", tab: "Majlis", title: "Majlis — Earthwork, R&D, Street Lighting & Landscape",
       desc: "After KM approval, Earthwork and R&D run concurrently. Street Lighting and Landscape follow R&D, concurrently with each other.",
       nodes: [
-        { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "link", heading: "Approved KM", linkLabel: "Link to approved KM (auto-linked from MKM 7.4)" },
         { n: 2, id: "ew", label: "Earthwork", col: 1, lane: -1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 3, id: "rd", label: "R&D", col: 1, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 4, id: "sl", label: "Street Lighting", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
@@ -1610,7 +1610,13 @@
   }
   function infraEnsureWork(n) {
     if (n.panel === "jas-emp") { if (!n.work) n.work = infraEmpDefault(); }
-    else if (n.panel === "jas-eia") { if (!n.work) n.work = { date: "—" }; }
+    else if (n.panel === "jas-eia" || n.panel === "link") { if (!n.work) n.work = { date: "—" }; }
+  }
+  // Generic "approved document" link panel (e.g. Majlis KM Approval → MKM 7.4).
+  // Driven by node.heading + node.linkLabel so adding one is a data change.
+  function linkPanelHtml(n) {
+    return '<h4 class="pc-card-title" style="font-size:19px">' + esc(n.heading || n.label) + "</h4>" +
+      '<div class="if-linkrow"><a href="#" onclick="return false">' + esc(n.linkLabel || ("Link to approved " + n.label)) + '</a><span style="font-weight:700">' + esc((n.work && n.work.date) || "—") + "</span></div>";
   }
   // Real file upload: shows the picked filename as a chip; otherwise a button that
   // opens the file dialog (hidden <input type=file>). `val` is the stored filename.
@@ -1722,6 +1728,7 @@
     let title, body;
     if (n.panel === "jas-eia") { title = "EIA — Approved Report"; body = eiaHtml(n.work); }
     else if (n.panel === "jas-emp") { title = "EMP — Environmental Management Plan"; body = empHtml(n.work); }
+    else if (n.panel === "link") { title = n.heading || n.label; body = linkPanelHtml(n); }
     else { title = n.label; body = '<p class="sd-note">Working page for this step is coming next.</p>'; }
     panelEl.innerHTML = '<section class="pc-card" style="border-color:var(--brand-green);margin-top:14px">' +
       '<div class="pc-head-card"><div class="pc-authority">' + esc(title) + "</div>" +
