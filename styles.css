@@ -1743,3 +1743,29 @@ body {
   .set-row > label { min-width: 100%; }
   .ag-bu { width: 300px; }
 }
+
+/* ---- Master Infra working panels (.if-*) — app design language ---- */
+.if-card { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-top: 12px; }
+.if-card.ok { border-color: var(--brand-green); background: #fbfdfb; }
+.if-title { font-size: 14.5px; font-weight: 700; color: var(--ink); margin-bottom: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.if-item { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--ink); }
+.if-item:last-child { border-bottom: none; }
+.if-stamp { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink); }
+.if-stamp .if-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand-green); }
+.if-stamp .if-time { color: var(--muted); }
+.if-routing { margin-top: 12px; border-radius: 10px; padding: 12px 14px; font-size: 12.5px; line-height: 1.5; }
+.if-routing.ok { background: var(--brand-green-light); color: var(--brand-green-dark); }
+.if-routing.warn { background: #fef3c7; color: #8a5a06; }
+.if-add { width: 100%; margin-top: 12px; background: var(--white); color: var(--brand-green-dark); border: 1.5px dashed var(--brand-green); border-radius: 10px; padding: 12px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: var(--font-sans); }
+.if-add:hover { background: var(--brand-green-light); }
+.if-linkrow { display: flex; justify-content: space-between; align-items: center; gap: 16px; background: var(--brand-green-light); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-top: 10px; }
+.if-linkrow a { color: var(--brand-green-dark); font-weight: 700; font-size: 13.5px; text-decoration: none; }
+.if-linkrow a:hover { text-decoration: underline; }
+.if-chip { display: inline-flex; align-items: center; gap: 8px; background: var(--white); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 700; color: var(--ink); }
+.if-caps { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--brand-green-dark); text-transform: uppercase; margin: 10px 0 6px; }
+.if-roman { font-size: 14px; font-weight: 700; margin: 18px 0 10px; color: var(--ink); }
+.if-wtabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; flex-wrap: wrap; }
+.if-wtab { padding: 9px 16px; border: 1px solid transparent; border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 13px; color: var(--muted); background: transparent; cursor: pointer; font-family: var(--font-sans); margin-bottom: -1px; }
+.if-wtab.on { background: var(--white); border-color: var(--line); color: var(--brand-green-dark); }
+.if-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 760px) { .if-2col { grid-template-columns: 1fr; } }

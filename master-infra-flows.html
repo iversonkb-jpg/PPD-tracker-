@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Master Infra — Submission Flows</title>
+<style>
+  :root{
+    --green:#2e7d46; --green-dark:#256639; --green-soft:#e9f3ea;
+    --amber:#d97706; --red:#b91c1c;
+    --ink:#1f2937; --ink-2:#6b7280; --ink-3:#9ca3af;
+    --field:#f4f4f5; --border:#e5e7eb;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:#fff; line-height:1.5;
+    max-width:1280px; margin:0 auto; padding:40px 32px 60px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .serif{font-family:Georgia,"Iowan Old Style","Times New Roman",serif}
+  .head{display:flex;justify-content:space-between;align-items:baseline;gap:20px;flex-wrap:wrap;margin-bottom:20px}
+  h1{font-size:30px;font-weight:700}
+  .hint{color:var(--ink-2);font-size:15px}
+  .tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
+  .tab{font-size:15px;font-weight:700;padding:10px 20px;border-radius:999px;border:1.5px solid var(--border);background:#fff;color:var(--ink-2);cursor:pointer;font-family:inherit}
+  .tab:hover{border-color:var(--green);color:var(--green-dark)}
+  .tab.active{background:var(--green);border-color:var(--green);color:#fff}
+  .gear{font-size:15px;font-weight:700;padding:10px 16px;border-radius:999px;border:1.5px dashed var(--border);background:#fff;color:var(--ink-3);cursor:pointer;font-family:inherit}
+  .gear:hover{border-color:var(--green);color:var(--green-dark)}
+  /* manage panel */
+  .panel{border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:18px;background:#fafafa}
+  .panel h3{font-size:15px;font-weight:700;margin-bottom:12px}
+  .p-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:15px}
+  .p-row:last-of-type{border-bottom:none}
+  .p-name{flex:1;font-weight:600}
+  .p-x{border:none;background:var(--field);color:var(--red);font-weight:700;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:13.5px;font-family:inherit}
+  .p-x:hover{background:#fee2e2}
+  .p-add{display:flex;gap:10px;margin-top:14px}
+  .p-add input{flex:1;max-width:280px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:15px;font-family:inherit;background:#fff}
+  .p-add button{background:var(--green);color:#fff;border:none;border-radius:10px;padding:10px 22px;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit}
+  .p-add button:hover{background:var(--green-dark)}
+  .p-note{font-size:13px;color:var(--ink-3);margin-top:10px}
+  .flow-card{border:1px solid var(--border);border-radius:16px;padding:10px 8px;overflow-x:auto;background:#fff}
+  .flow-card svg{display:block}
+  .empty{padding:70px 20px;text-align:center;color:var(--ink-3);font-size:15.5px}
+  .meta-row{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-top:14px}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13.5px;color:var(--ink-2)}
+  .lg{display:inline-flex;align-items:center;gap:7px}
+  .lg .sw{width:14px;height:14px;border-radius:50%}
+  .work-link{font-size:14px;font-weight:700;color:var(--green-dark);text-decoration:none}
+  .work-link:hover{text-decoration:underline}
+  .desc{margin-top:10px;color:var(--ink-2);font-size:14.5px}
+  .locknote{background:var(--field);border-radius:12px;padding:13px 18px;color:var(--ink-2);font-size:14px;margin-top:26px}
+  /* embedded working page */
+  .work-panel{display:none;margin-top:22px;border:1.5px solid var(--green);border-radius:16px;overflow:hidden;background:#fff}
+  .work-bar{display:flex;justify-content:space-between;align-items:center;gap:14px;background:var(--green-soft);padding:12px 20px}
+  .work-title{font-size:15px;font-weight:700;color:var(--green-dark)}
+  .work-actions{display:flex;gap:16px;align-items:center}
+  .work-actions a{font-size:13.5px;font-weight:700;color:var(--green-dark);text-decoration:none}
+  .work-actions a:hover{text-decoration:underline}
+  .work-close{border:none;background:transparent;color:var(--ink-2);font-size:20px;font-weight:700;cursor:pointer;line-height:1;padding:2px 6px}
+  .work-close:hover{color:var(--red)}
+  .work-panel iframe{display:block;width:100%;height:960px;border:none;background:#fff}
+  /* inline working content */
+  .work-body{padding:30px 34px 34px}
+  .work-body h2{font-size:24px;font-weight:700;margin-bottom:16px}
+  .wc-card{border:1px solid var(--border);border-radius:14px;padding:22px 26px;margin-bottom:16px}
+  .wc-card.ok{border-color:var(--green);background:#fbfdfb}
+  .wc-title{font-size:19px;font-weight:700;display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .wc-tag{font-size:12.5px;font-weight:700;letter-spacing:.06em;padding:5px 14px;border-radius:999px;border:1.5px solid var(--border);color:var(--ink-3);text-transform:uppercase}
+  .wc-tag.g{border-color:var(--green);color:var(--green-dark);background:var(--green-soft)}
+  .wc-sub{font-size:16.5px;font-weight:700;margin:14px 0 10px}
+  .wc-date{background:var(--field);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:17px;color:var(--ink);min-width:280px;font-family:inherit}
+  .wc-date:focus{outline:2px solid var(--green);outline-offset:1px}
+  .wc-btns{display:flex;gap:12px;margin:14px 0 6px}
+  .wc-confirm{background:var(--green);color:#fff;border:none;border-radius:12px;padding:13px 30px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit}
+  .wc-confirm:hover{background:var(--green-dark)}
+  .wc-cancel{background:#fff;color:var(--ink);border:1px solid var(--border);border-radius:12px;padding:13px 30px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit}
+  .wc-cancel:hover{background:var(--field)}
+  .wc-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:10px 0;font-size:16px}
+  .wc-upload{background:#fff;color:var(--ink);border:1px solid var(--border);border-radius:12px;padding:10px 24px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+  .wc-upload:hover{background:var(--field)}
+  .wc-status{display:inline-flex;align-items:center;gap:8px;font-size:15px}
+  .wc-status .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+  .wc-status .time{color:var(--ink-3)}
+  .wc-add{background:#fff;color:var(--green-dark);border:1.5px dashed var(--green);border-radius:12px;width:100%;padding:14px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit}
+  .wc-add:hover{background:var(--green-soft)}
+  .wc-linkrow{display:flex;justify-content:space-between;align-items:center;gap:16px;background:var(--green-soft);border:1px solid #d3e6d6;border-radius:12px;padding:18px 22px;margin-bottom:12px}
+  .wc-linkrow a{color:var(--green-dark);font-weight:700;font-size:17px;text-decoration:none}
+  .wc-linkrow a:hover{text-decoration:underline}
+  .wc-linkrow .date{font-weight:700;font-size:17px;white-space:nowrap}
+  .wc-sect{border:1px solid var(--border);border-radius:16px;padding:24px 28px;margin-bottom:20px}
+  .wc-h{font-size:22px;font-weight:700;margin-bottom:16px}
+  .wc-tag.a{border-color:#e0b062;color:#b45309;background:#fef3c7}
+  .wc-row2{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;font-size:16px}
+  .wc-note{color:var(--ink-2);font-size:14.5px;margin-top:8px}
+  .wc-amber{margin-top:12px;background:#fef3c7;color:#b45309;border-radius:10px;padding:12px 16px;font-size:15px;line-height:1.45}
+  .wc-green{margin-top:12px;background:var(--green-soft);color:var(--green-dark);border-radius:10px;padding:12px 16px;font-size:15px}
+  .wc-div{border-top:1px solid var(--border)}
+  .wc-field{background:var(--field);border:1px solid var(--border);border-radius:12px;padding:15px 18px;font-size:16.5px;color:var(--ink);font-family:inherit;width:100%}
+  .wc-field:focus{outline:2px solid var(--green);outline-offset:1px}
+  select.wc-field{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 18px center;padding-right:46px}
+  textarea.wc-field{min-height:120px;resize:vertical;line-height:1.5}
+  .wc-filerow{display:flex;gap:14px;align-items:center;margin:12px 0;flex-wrap:wrap}
+  .wc-filerow .wc-field{width:auto;flex:1;min-width:200px}
+  .wc-chip{display:inline-flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:13px 18px;font-size:16px;font-weight:700;color:var(--ink)}
+  .wc-chip svg{flex:none}
+  .wc-stack{display:grid;gap:12px}
+  .wc-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:20px;flex-wrap:wrap}
+  .wc-tab{padding:12px 22px;border:1px solid transparent;border-bottom:none;border-radius:10px 10px 0 0;font-weight:700;font-size:16px;color:var(--ink-2);background:transparent;cursor:pointer;font-family:inherit;margin-bottom:-1px}
+  .wc-tab.on{background:#fff;border-color:var(--border);color:var(--green-dark)}
+  .wc-tab:hover{color:var(--green-dark)}
+  .wc-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.wc-2col{grid-template-columns:1fr}}
+  .wc-caps{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--green-dark);text-transform:uppercase;margin:8px 0 6px}
+  .wc-roman{font-size:16.5px;font-weight:700;margin:22px 0 12px}
+  .wc-drop{border:1.5px dashed var(--border);border-radius:12px;padding:20px;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--green-dark);font-weight:700;font-size:16px;cursor:pointer;background:#fff;width:100%;max-width:420px;font-family:inherit}
+  .wc-drop:hover{border-color:var(--green);background:var(--green-soft)}
+  .wc-btn-out{background:#fff;color:var(--green-dark);border:1.5px solid var(--green);border-radius:12px;padding:13px 24px;font-weight:700;font-size:16px;cursor:pointer;font-family:inherit}
+  .wc-btn-out:hover{background:var(--green-soft)}
+  .wc-btn-red{background:#fff;color:#b91c1c;border:1.5px solid #b91c1c;border-radius:12px;padding:13px 24px;font-weight:700;font-size:16px;cursor:pointer;font-family:inherit}
+  .wc-btn-red:hover{background:#fee2e2}
+  .wc-lbl{font-size:15px;color:var(--ink-2);margin:16px 0 8px}
+</style>
+</head>
+<body>
+
+<!-- ================================================================
+     DATA — one entry per agency tab.
+     Node states: done (green) · late (red) · active (amber) · todo (gray)
+     Dates: ts/as = target/actual start, te/ae = target/actual end.
+     lane: 0 = main line, -1 = upper branch, 1 = lower branch.
+     Edges: {from,to,days} — 'days' also takes condition labels
+     like "no STP" / "with STP".
+================================================================ -->
+<script>
+const FLOWS = [
+  { id:"jas", tab:"JAS", title:"JAS — Environmental",
+    desc:"EIA first, then EMP.",
+    work:"jas-working.html",
+    nodes:[
+      {n:1,id:"eia",label:"EIA",col:0,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—",panel:"jas-eia"},
+      {n:2,id:"emp",label:"EMP",col:1,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—",panel:"jas-emp"}
+    ],
+    edges:[{from:"eia",to:"emp"}]},
+
+  { id:"majlis", tab:"Majlis", title:"Majlis — Earthwork, R&D, Street Lighting & Landscape",
+    desc:"After KM approval, Earthwork and R&D run concurrently. Street Lighting and Landscape follow R&D, concurrently with each other.",
+    work:"#",
+    nodes:[
+      {n:1,id:"km",label:"KM Approval",     col:0,lane:0,  state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:2,id:"ew",label:"Earthwork",       col:1,lane:-1, state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:3,id:"rd",label:"R&D",             col:1,lane:1,  state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:4,id:"sl",label:"Street Lighting", col:2,lane:0,  state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:5,id:"ls",label:"Landscape",       col:2,lane:1,  state:"todo",ts:"—",as:"—",te:"—",ae:"—"}
+    ],
+    edges:[
+      {from:"km",to:"ew"},{from:"km",to:"rd"},
+      {from:"rd",to:"sl"},{from:"rd",to:"ls"}
+    ]},
+
+  { id:"jkr", tab:"JKR", title:"JKR — Road Safety",
+    desc:"TIA and RSA stages in sequence.",
+    work:"#",
+    nodes:[
+      {n:1,id:"r1",label:"TIA, RSA 1 & 2",  col:0,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:2,id:"r3",label:"RSA 3",           col:1,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:3,id:"s1",label:"RSA 4 Stage 1",   col:2,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:4,id:"s2",label:"RSA 4 Stage 2",   col:3,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:5,id:"s3",label:"RSA 4 Stage 3",   col:4,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:6,id:"r5",label:"RSA 5",           col:5,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"}
+    ],
+    edges:[
+      {from:"r1",to:"r3"},{from:"r3",to:"s1"},{from:"s1",to:"s2"},
+      {from:"s2",to:"s3"},{from:"s3",to:"r5"}
+    ]},
+
+  { id:"iwk", tab:"IWK", title:"IWK — Sewerage (PDC)",
+    desc:"PDC 1–2, then two routes: with an STP, go through HAZOP and PDC 3–5 before PDC 6; with no STP, skip straight from PDC 2 to PDC 6. Both routes finish PDC 6 → 7 → 8.",
+    work:"#",
+    nodes:[
+      {n:1,id:"p1",label:"PDC 1",  col:0,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:2,id:"p2",label:"PDC 2",  col:1,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:3,id:"hz",label:"HAZOP",  col:2,lane:1,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:4,id:"p3",label:"PDC 3",  col:3,lane:1,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:5,id:"p4",label:"PDC 4",  col:4,lane:1,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:6,id:"p5",label:"PDC 5",  col:5,lane:1,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:7,id:"p6",label:"PDC 6",  col:6,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:8,id:"p7",label:"PDC 7",  col:7,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:9,id:"p8",label:"PDC 8",  col:8,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"}
+    ],
+    edges:[
+      {from:"p1",to:"p2"},
+      {from:"p2",to:"hz",days:"with STP"},
+      {from:"hz",to:"p3"},{from:"p3",to:"p4"},{from:"p4",to:"p5"},{from:"p5",to:"p6"},
+      {from:"p2",to:"p6",days:"no STP"},
+      {from:"p6",to:"p7"},{from:"p7",to:"p8"}
+    ]},
+
+  { id:"ais", tab:"AIS", title:"AIS — Water Reticulation",
+    desc:"Concept (MKM) and detail reticulation, then QT 1–7 in sequence.",
+    work:"#",
+    nodes:[
+      {n:1,id:"c", label:"Concept (MKM)",       col:0,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:2,id:"dr",label:"Detail Reticulation", col:1,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:3,id:"q1",label:"QT 1",col:2,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:4,id:"q2",label:"QT 2",col:3,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:5,id:"q3",label:"QT 3",col:4,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:6,id:"q4",label:"QT 4",col:5,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:7,id:"q5",label:"QT 5",col:6,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:8,id:"q6",label:"QT 6",col:7,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"},
+      {n:9,id:"q7",label:"QT 7",col:8,lane:0,state:"todo",ts:"—",as:"—",te:"—",ae:"—"}
+    ],
+    edges:[
+      {from:"c",to:"dr"},{from:"dr",to:"q1"},{from:"q1",to:"q2"},{from:"q2",to:"q3"},
+      {from:"q3",to:"q4"},{from:"q4",to:"q5"},{from:"q5",to:"q6"},{from:"q6",to:"q7"}
+    ]},
+
+  { id:"telco",tab:"Telco", title:"Telco", desc:"", work:"#", nodes:[], edges:[]},
+  { id:"tnb",  tab:"TNB",   title:"TNB",   desc:"", work:"#", nodes:[], edges:[]},
+  { id:"jps",  tab:"JPS",   title:"JPS",   desc:"", work:"#", nodes:[], edges:[]}
+];
+</script>
+
+<div class="head">
+  <h1 class="serif">Master Infra</h1>
+  <div class="hint">Click a step to open its working page. Switch agency with the tabs.</div>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div id="managePanel" style="display:none" class="panel">
+  <h3>Manage agencies</h3>
+  <div id="agencyList"></div>
+  <div class="p-add">
+    <input id="newAgency" type="text" placeholder="New agency name (e.g. BOMBA)">
+    <button onclick="addAgency()">Add</button>
+  </div>
+  <div class="p-note">Add/remove works while the page is open. To make it permanent, tell Claude (it saves into this file) — or Claude Code will wire it to real storage.</div>
+</div>
+
+<div class="flow-card"><div id="flow"></div></div>
+
+<div class="work-panel" id="workPanel">
+  <div class="work-bar">
+    <span class="work-title" id="workTitle">Working page</span>
+    <span class="work-actions">
+      <a id="workFull" href="#" target="_blank">Open full page ›</a>
+      <button class="work-close" onclick="closeWork()" title="Close">✕</button>
+    </span>
+  </div>
+  <div class="work-body" id="workBody" style="display:none"></div>
+  <iframe id="workFrame" src="about:blank" style="display:none"></iframe>
+</div>
+
+<div class="meta-row">
+  <div class="legend">
+    <span class="lg"><span class="sw" style="background:#2e7d46"></span>Done</span>
+    <span class="lg"><span class="sw" style="background:#d97706"></span>In progress</span>
+    <span class="lg"><span class="sw" style="background:#b91c1c"></span>Late / query</span>
+    <span class="lg"><span class="sw" style="background:#ececee;border:1.5px solid #d1d5db"></span>Upcoming</span>
+    <span class="lg" style="margin-left:6px">TS/TE = target start/end · AS/AE = actual</span>
+  </div>
+  <a class="work-link" id="worklink" href="#" onclick="return worklinkClick(event)">Open working page ›</a>
+</div>
+<div class="desc" id="desc"></div>
+
+<div class="locknote">JAS, Majlis, JKR, IWK and AIS flows are set per your spec (dates/status to fill in). Telco, TNB and JPS are placeholders — give Claude their steps and they'll appear the same way.</div>
+
+<script>
+const COLW=185, LANEH=138, R=30, PADX=90;
+const COLORS={
+  done:{fill:'#2e7d46',stroke:'#2e7d46',text:'#fff'},
+  active:{fill:'#d97706',stroke:'#d97706',text:'#fff'},
+  late:{fill:'#b91c1c',stroke:'#b91c1c',text:'#fff'},
+  todo:{fill:'#ececee',stroke:'#d1d5db',text:'#6b7280'}
+};
+let current=FLOWS[0].id;
+let managing=false;
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+function drawFlow(f){
+  if(!f.nodes.length)return `<div class="empty">Flow for ${esc(f.title)} not defined yet — tell Claude the steps and it will appear here in the same format.</div>`;
+  const lanes=f.nodes.map(n=>n.lane);
+  const minL=Math.min(...lanes), maxL=Math.max(...lanes);
+  const cols=Math.max(...f.nodes.map(n=>n.col));
+  const topPad=(minL<0?100:70), botPad=(maxL>0?100:70);
+  const H=(maxL-minL)*LANEH+topPad+botPad+60;
+  const W=PADX*2+cols*COLW;
+  const cy=(l)=>topPad+(l-minL)*LANEH+30;
+  const cx=(c)=>PADX+c*COLW;
+  const byId={}; f.nodes.forEach(n=>byId[n.id]=n);
+
+  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:${W}px;max-width:none">
+  <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10 z" fill="#9ca3af"/></marker></defs>`;
+
+  f.edges.forEach(e=>{
+    const a=byId[e.from], b=byId[e.to];
+    const ax=cx(a.col)+R, ay=cy(a.lane), bx=cx(b.col)-R-4, by=cy(b.lane);
+    let path,px,py;
+    if(a.lane===b.lane){
+      path=`M ${ax} ${ay} L ${bx} ${by}`; px=(ax+bx)/2; py=ay-20;
+    }else{
+      const jx=ax+(cx(b.col)-R-ax)*0.42;
+      path=`M ${ax} ${ay} L ${jx} ${ay} L ${jx} ${by} L ${bx} ${by}`;
+      px=(jx+bx)/2; py=by-20;
+    }
+    svg+=`<path d="${path}" fill="none" stroke="#b6bcc4" stroke-width="2.5" marker-end="url(#arr)"/>`;
+    if(e.days){
+      const tw=e.days.length*6.6+22;
+      svg+=`<rect x="${px-tw/2}" y="${py-12}" width="${tw}" height="22" rx="11" fill="#fff" stroke="#d1d5db"/>
+      <text x="${px}" y="${py+3}" text-anchor="middle" font-size="12" fill="#6b7280" font-weight="600">${esc(e.days)}</text>`;
+    }
+  });
+
+  f.nodes.forEach(n=>{
+    const x=cx(n.col), y=cy(n.lane), c=COLORS[n.state]||COLORS.todo;
+    const above=n.lane<0;
+    svg+=`<g style="cursor:pointer" onclick="nodeClick('${esc(n.id)}')">
+      <circle cx="${x}" cy="${y}" r="${R}" fill="${c.fill}" stroke="${c.stroke}" stroke-width="2"/>
+      <text x="${x}" y="${y+6}" text-anchor="middle" font-size="19" font-weight="700" fill="${c.text}">${n.n}</text>`;
+    const l1=`TS ${n.ts} · AS ${n.as}`, l2=`TE ${n.te} · AE ${n.ae}`;
+    if(above){
+      svg+=`<text x="${x}" y="${y-R-46}" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2937">${esc(n.label)}</text>
+      <text x="${x}" y="${y-R-29}" text-anchor="middle" font-size="10.5" fill="#9ca3af">${esc(l1)}</text>
+      <text x="${x}" y="${y-R-15}" text-anchor="middle" font-size="10.5" fill="#9ca3af">${esc(l2)}</text>`;
+    }else{
+      svg+=`<text x="${x}" y="${y+R+22}" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2937">${esc(n.label)}</text>
+      <text x="${x}" y="${y+R+39}" text-anchor="middle" font-size="10.5" fill="#9ca3af">${esc(l1)}</text>
+      <text x="${x}" y="${y+R+53}" text-anchor="middle" font-size="10.5" fill="#9ca3af">${esc(l2)}</text>`;
+    }
+    svg+=`</g>`;
+  });
+  svg+=`</svg>`;
+  return svg;
+}
+
+function showToast(msg){
+  let t=document.getElementById('toast');
+  if(!t){
+    t=document.createElement('div');t.id='toast';
+    t.style.cssText='position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:11px 22px;border-radius:999px;font-size:14.5px;font-weight:600;z-index:99;box-shadow:0 6px 20px rgba(0,0,0,.25);transition:opacity .3s';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._h);t._h=setTimeout(()=>{t.style.opacity='0';},2600);
+}
+// ---- inline working panels (state survives while the page is open) ----
+const JAS_EIA={
+  rounds:[{n:1,date:'',confirmed:false,confirmedAt:'',notesUploaded:false}],   // 2.1 + 2.2
+  meetingNote:false,                                                            // 2.3
+  revise:{date:'',confirmed:false,confirmedAt:''},                              // 2.4
+  submissions:[{n:1,uploaded:false,status:'in-review'}],                        // 2.5
+  submitted:{docs:false,ack:false},                                             // 2.6
+  clearance:[{rev:0,type:'',fileName:'',date:'',ref:'',comment:'',submitted:false,submittedAt:''}] // 2.7
+};
+const LETTER_TYPES=["Tiada Halangan Letter / Approval Letter","Ulasan / Comment Letter","Rejection Letter","NA"];
+const CLS_TYPES=["Appeal","Compliance"];
+const IMPACT_TYPES=["Time & cost impact","Time impact only","Cost impact only","No impact"];
+const MEET_TYPES=["Meeting required","No meeting required"];
+// 2.8 — Classification & Appeal (PPD internal)
+const JAS_APPEAL={
+  active:0,
+  list:[{n:1,cls:'',impact:'',
+    i:{file:'',date:'',submitted:false,at:''},
+    ii:{req:'',date:'',submitted:false,at:''},
+    iv:{doc:'',outcome:null,comments:''}}]
+};
+const nowStr=()=>new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
+
+const JAS_EIA_REPORT={url:"#",date:"—"};
+function renderJasEiaReport(){
+  return `<h2 class="serif">Approved Environmental Impact Assessment Report</h2>
+  <div class="wc-linkrow">
+    <a href="${JAS_EIA_REPORT.url}" target="_blank">Link to approved report (auto-linked from MKM JAS 6.1)</a>
+    <span class="date">${JAS_EIA_REPORT.date}</span>
+  </div>`;
+}
+function uploadRow(label,done,handler){
+  return `<div class="wc-row2">
+    <span style="color:${done?'var(--ink)':'var(--ink-2)'}">${label}</span>
+    ${done
+      ?'<span class="wc-status"><span class="dot"></span><b>Uploaded</b></span>'
+      :`<button class="wc-upload" onclick="${handler}">Upload</button>`}
+  </div>`;
+}
+function renderJasEia(){
+  const D=JAS_EIA, rounds=D.rounds, subs=D.submissions;
+  const approved=subs.some(s=>s.status==='approved');
+  return `
+  <!-- Pre-Consultation : 2.1 + 2.2 -->
+  <div class="wc-sect">
+    <h3 class="wc-h serif">Pre-Consultation</h3>
+    ${rounds.map((r,i)=>`
+      <div class="wc-card ${r.confirmed?'ok':''}">
+        <div class="wc-title">Pre-Consultation ${r.n}
+          <span class="wc-tag ${r.confirmed?'g':''}">${r.confirmed?'Confirmed':'Pending'}</span>
+        </div>
+        <div class="wc-sub">2.1 Date of pre-consultation (by Consultant)</div>
+        ${r.confirmed
+          ?`<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+              <input type="date" class="wc-date" value="${r.date}" disabled>
+              <span class="wc-status"><span class="dot"></span><b>Confirmed</b><span class="time">${r.confirmedAt}</span></span>
+            </div>`
+          :`<input type="date" class="wc-date" id="pcdate${i}" value="${r.date}">
+            <div class="wc-btns">
+              <button class="wc-confirm" onclick="pcConfirm(${i})">Confirm</button>
+              <button class="wc-cancel" onclick="refreshWork()">Cancel</button>
+            </div>`}
+        <div class="wc-sub">2.2 Pre-consultation comments / notes (if any)</div>
+        ${uploadRow('Comments / notes',r.notesUploaded,`pcUpload(${i})`)}
+      </div>`).join('')}
+    <button class="wc-add" onclick="pcAdd()">＋ Add Pre-Consultation ${rounds.length+1}</button>
+  </div>
+
+  <!-- Meeting & Review : 2.3 – 2.5 -->
+  <div class="wc-sect">
+    <h3 class="wc-h serif">Meeting &amp; Review</h3>
+
+    <div class="wc-sub">2.3 Consultant to upload meeting note/sketch (if meeting with PPD)</div>
+    ${uploadRow('Meeting note / sketch',D.meetingNote,'empMeetingNote()')}
+
+    <div class="wc-sub" style="margin-top:22px">2.4 PPD to set date for Consultant to upload revised drawings for review</div>
+    ${D.revise.confirmed
+      ?`<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <input type="date" class="wc-date" value="${D.revise.date}" disabled>
+          <span class="wc-status"><span class="dot"></span><b>Confirmed</b><span class="time">${D.revise.confirmedAt}</span></span>
+        </div>`
+      :`<input type="date" class="wc-date" id="revdate" value="${D.revise.date}">
+        <div class="wc-btns">
+          <button class="wc-confirm" onclick="empReviseConfirm()">Confirm</button>
+          <button class="wc-cancel" onclick="refreshWork()">Cancel</button>
+        </div>`}
+    <div class="wc-note">System will notify Consultant in their task list.</div>
+
+    <div class="wc-sub" style="margin-top:22px">2.5 Submission review — upload, PPD review &amp; comment, revise until approved</div>
+    ${subs.map((s,i)=>`
+      <div class="wc-card ${s.status==='approved'?'ok':''}">
+        <div class="wc-title">${s.n===1?'Submission':'Revised Submission '+s.n}
+          <span class="wc-tag ${s.status==='approved'?'g':s.status==='revision'?'a':''}">${
+            s.status==='approved'?'Approved':s.status==='revision'?'Revision requested':'In review'}</span>
+        </div>
+        ${uploadRow('Submission drawings / documents',s.uploaded,`empSubUpload(${i})`)}
+        ${s.uploaded&&s.status==='in-review'
+          ?`<div class="wc-btns" style="margin-top:6px">
+              <button class="wc-confirm" onclick="empSubResult(${i},'approved')">PPD approve</button>
+              <button class="wc-cancel" onclick="empSubResult(${i},'revision')">Request revision</button>
+            </div>`:''}
+        ${s.status==='revision'?`<div class="wc-amber">↻ Revision requested. Consultant to upload a revised submission below.</div>`:''}
+        ${s.status==='approved'?`<div class="wc-green">✓ Approved by PPD — 2.6 Submitted Documents unlocked.</div>`:''}
+      </div>`).join('')}
+  </div>
+
+  <!-- 2.6 -->
+  <div class="wc-sect">
+    <h3 class="wc-h serif">2.6 Submitted Documents</h3>
+    <div class="wc-note" style="margin:-8px 0 12px">${approved?'PPD approved the submission in 2.5 — upload the submitted set and acknowledgement.':'Available after PPD approves the submission in 2.5.'}</div>
+    <div style="${approved?'':'opacity:.45;pointer-events:none'}">
+      ${uploadRow('Submitted drawings / documents',D.submitted.docs,'empSubmitted("docs")')}
+      <div class="wc-div"></div>
+      ${uploadRow('Acknowledgement (from authority)',D.submitted.ack,'empSubmitted("ack")')}
+    </div>
+  </div>
+
+  <!-- Clearance : 2.7 -->
+  <div class="wc-sect">
+    <h3 class="wc-h serif">Clearance</h3>
+    ${D.clearance.map((c,i)=>`
+      <div class="${i>0?'wc-card':''}" ${i>0?'':'style="margin-bottom:4px"'}>
+        ${i>0?`<div class="wc-title">Rev ${c.rev}
+            ${c.submitted?'<span class="wc-tag g">Submitted</span>':'<span class="wc-tag">Draft</span>'}
+          </div>`:''}
+        <div class="wc-sub" style="margin-top:0">2.7 Consultant to upload:${i>0?` <span style="font-weight:400;color:var(--ink-3)">rev ${c.rev}</span>`:''}</div>
+        <div class="wc-note" style="margin:-4px 0 12px">${LETTER_TYPES.join(', ')}</div>
+        <div class="wc-stack">
+          <select class="wc-field" ${c.submitted?'disabled':''} onchange="clrSet(${i},'type',this.value)">
+            <option value="" ${c.type?'':'selected'} disabled>Select letter type…</option>
+            ${LETTER_TYPES.map(t=>`<option ${c.type===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+          <div class="wc-filerow">
+            ${c.fileName
+              ?`<span class="wc-chip"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2e7d46" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>${c.fileName}</span>`
+              :`<button class="wc-upload" ${c.submitted?'disabled':''} onclick="clrUpload(${i})">Upload letter</button>`}
+            <input type="date" class="wc-field" style="max-width:230px" ${c.submitted?'disabled':''} value="${c.date}" onchange="clrSet(${i},'date',this.value)">
+          </div>
+          <input type="text" class="wc-field" placeholder="Reference no. (e.g. EG/SMP/IWK/2026)" ${c.submitted?'disabled':''} value="${c.ref}" oninput="clrSet(${i},'ref',this.value,true)">
+        </div>
+        <div class="wc-sub">Condition &amp; Comment by Authority</div>
+        <textarea class="wc-field" placeholder="Enter condition / comment by authority…" ${c.submitted?'disabled':''} oninput="clrSet(${i},'comment',this.value,true)">${c.comment}</textarea>
+        ${c.submitted
+          ?`<div class="wc-status" style="margin-top:14px"><span class="dot"></span><b>System submitted</b><span class="time">${c.submittedAt}</span></div>`
+          :`<div class="wc-btns"><button class="wc-confirm" onclick="clrSubmit(${i})">Submit</button></div>`}
+      </div>`).join('')}
+  </div>
+
+  ${renderAppealSection()}`;
+}
+
+function stampRow(o){
+  return `<div class="wc-status" style="margin-top:12px"><span class="dot"></span><b>System submitted</b><span class="time">${o.at}</span></div>`;
+}
+function renderAppealSection(){
+  const A=JAS_APPEAL, a=A.list[A.active];
+  const isAppeal=a.cls==='Appeal';
+  const meetingNeeded=a.ii.req==='Meeting required';
+  return `
+  <div class="wc-sect">
+    <h3 class="wc-h serif">Classification &amp; Appeal (PPD Internal Usage Only)</h3>
+
+    <div class="wc-tabs">
+      ${A.list.map((x,i)=>`<button class="wc-tab ${i===A.active?'on':''}" onclick="apTab(${i})">Appeal ${x.n}</button>`).join('')}
+      <button class="wc-tab" style="color:var(--ink-3)" onclick="apAdd()">＋ Appeal</button>
+    </div>
+
+    <div class="wc-sub" style="margin-top:0">2.8 Appeal / Compliance classification</div>
+    <div class="wc-2col">
+      <select class="wc-field" onchange="apSet('cls',this.value)">
+        <option value="" ${a.cls?'':'selected'} disabled>Select classification…</option>
+        ${CLS_TYPES.map(t=>`<option ${a.cls===t?'selected':''}>${t}</option>`).join('')}
+      </select>
+      <select class="wc-field" onchange="apSet('impact',this.value)">
+        <option value="" ${a.impact?'':'selected'} disabled>Select impact…</option>
+        ${IMPACT_TYPES.map(t=>`<option ${a.impact===t?'selected':''}>${t}</option>`).join('')}
+      </select>
+    </div>
+
+    ${!isAppeal?`<div class="wc-note" style="margin-top:16px">${a.cls==='Compliance'
+        ?'Classified as Compliance — consultant to comply and upload the revised outcome as 2.7 rev '+(JAS_EIA.clearance.length)+'.'
+        :'Select “Appeal” to open the internal appeal workflow below.'}</div>`
+    :`
+    <div class="wc-sub" style="margin-top:22px">If to appeal (with time/cost impact to AP/launch date):</div>
+    <div class="wc-caps">Internal PPD use only</div>
+
+    <div class="wc-roman">i. HOD-PPD to upload the proposed adjusted AP/Launch timeline and action plan:</div>
+    <div class="wc-filerow">
+      ${a.i.file
+        ?`<span class="wc-chip"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2e7d46" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>${a.i.file}</span>`
+        :`<button class="wc-upload" onclick="apUploadI()">Upload timeline &amp; action plan</button>`}
+      <input type="date" class="wc-field" style="max-width:230px" ${a.i.submitted?'disabled':''} value="${a.i.date}" onchange="apSetSub('i','date',this.value)">
+    </div>
+    ${a.i.submitted?stampRow(a.i)
+      :`<div class="wc-btns"><button class="wc-confirm" onclick="apSubmit('i')">Submit</button></div>`}
+
+    <div class="wc-roman">ii. HOD-PPD to select if required for a meeting with CDO:</div>
+    <div class="wc-2col">
+      <select class="wc-field" ${a.ii.submitted?'disabled':''} onchange="apSetSub('ii','req',this.value)">
+        <option value="" ${a.ii.req?'':'selected'} disabled>Select…</option>
+        ${MEET_TYPES.map(t=>`<option ${a.ii.req===t?'selected':''}>${t}</option>`).join('')}
+      </select>
+      <input type="date" class="wc-field" ${a.ii.submitted?'disabled':''} value="${a.ii.date}" onchange="apSetSub('ii','date',this.value)">
+    </div>
+    ${a.ii.submitted?stampRow(a.ii)
+      :`<div class="wc-btns"><button class="wc-confirm" onclick="apSubmit('ii')">Submit</button></div>`}
+
+    ${`
+      <div class="wc-card" style="margin-top:20px">
+        <div class="wc-roman" style="margin-top:0">iv. PPD-HOD to update meeting outcome:</div>
+        ${a.iv.doc
+          ?`<span class="wc-chip"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2e7d46" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>${a.iv.doc}</span>`
+          :`<button class="wc-drop" onclick="apUploadIV()">⤒ Upload Document</button>`}
+        <div class="wc-btns" style="margin-top:16px;flex-wrap:wrap">
+          <button class="wc-confirm" onclick="apOutcome('approved')">Approve by CDO</button>
+          <button class="wc-btn-out" onclick="apOutcome('revise')">To revise (with remarks)</button>
+          <button class="wc-btn-red" onclick="apOutcome('reject')">Reject (to comply)</button>
+        </div>
+        <div class="wc-lbl">CDO Comments</div>
+        <textarea class="wc-field" placeholder="Enter comments here…" oninput="apComments(this.value)">${a.iv.comments}</textarea>
+        ${a.iv.outcome==='approved'?`<div class="wc-green">✓ Approved by CDO — proceed to 2.9 and upload the outcome as 2.7 rev ${JAS_EIA.clearance.length}.</div>`:''}
+        ${a.iv.outcome==='revise'?`<div class="wc-amber">↻ To revise — step i has reopened above; update the timeline / action plan with CDO remarks and resubmit.</div>`:''}
+        ${a.iv.outcome==='reject'?`<div class="wc-amber">↻ Appeal rejected — to comply. Consultant to comply with the authority’s comments and upload the outcome as 2.7 rev ${JAS_EIA.clearance.length}.</div>`:''}
+      </div>`}
+    ${a.ii.submitted&&!meetingNeeded?`<div class="wc-note" style="margin-top:12px">No meeting required — record the outcome above, then proceed to 2.9 (upload as 2.7 rev ${JAS_EIA.clearance.length}).</div>`:''}
+    `}
+  </div>`;
+}
+function apCur(){return JAS_APPEAL.list[JAS_APPEAL.active];}
+function apTab(i){JAS_APPEAL.active=i;refreshWork();}
+function apSet(k,v){apCur()[k]=v;refreshWork();}
+function apSetSub(sec,k,v){apCur()[sec][k]=v;if(k!=='comments')refreshWork();}
+function apUploadI(){apCur().i.file='Appeal_timeline.pdf';refreshWork();}
+function apUploadIV(){apCur().iv.doc='Meeting_outcome.pdf';refreshWork();}
+function apComments(v){apCur().iv.comments=v;}
+function apSubmit(sec){
+  const a=apCur();
+  if(sec==='i'&&!a.i.file){showToast('Upload the timeline & action plan first');return;}
+  if(sec==='ii'&&!a.ii.req){showToast('Select whether a meeting is required');return;}
+  a[sec].submitted=true;a[sec].at=nowStr();
+  refreshWork();
+}
+function apBlank(n){return {n,cls:'',impact:'',
+  i:{file:'',date:'',submitted:false,at:''},
+  ii:{req:'',date:'',submitted:false,at:''},
+  iv:{doc:'',outcome:null,comments:''}};}
+function apAdd(){const A=JAS_APPEAL;A.list.push(apBlank(A.list.length+1));A.active=A.list.length-1;refreshWork();}
+function apOutcome(v){
+  const a=apCur();
+  a.iv.outcome=v;
+  if(v==='revise'){a.i.submitted=false;a.i.at='';}   // reopen step i for resubmission
+  refreshWork();
+}
+function pcConfirm(i){
+  const v=document.getElementById('pcdate'+i).value;
+  if(!v){showToast('Pick a date first');return;}
+  const r=JAS_EIA.rounds[i]; r.date=v; r.confirmed=true; r.confirmedAt=nowStr();
+  refreshWork();
+}
+function pcUpload(i){JAS_EIA.rounds[i].notesUploaded=true;refreshWork();}
+function pcAdd(){JAS_EIA.rounds.push({n:JAS_EIA.rounds.length+1,date:'',confirmed:false,confirmedAt:'',notesUploaded:false});refreshWork();}
+function empMeetingNote(){JAS_EIA.meetingNote=true;refreshWork();}
+function empReviseConfirm(){
+  const v=document.getElementById('revdate').value;
+  if(!v){showToast('Pick a date first');return;}
+  JAS_EIA.revise={date:v,confirmed:true,confirmedAt:nowStr()};
+  showToast('Date set — Consultant notified in their task list');
+  refreshWork();
+}
+function empSubUpload(i){JAS_EIA.submissions[i].uploaded=true;refreshWork();}
+function empSubResult(i,v){
+  const subs=JAS_EIA.submissions;
+  subs[i].status=v;
+  if(v==='revision'&&i===subs.length-1){
+    subs.push({n:subs.length+1,uploaded:false,status:'in-review'});
+  }
+  refreshWork();
+}
+function empSubmitted(k){JAS_EIA.submitted[k]=true;refreshWork();}
+function clrSet(i,k,v,quiet){JAS_EIA.clearance[i][k]=v;if(!quiet)refreshWork();}
+function clrUpload(i){
+  const c=JAS_EIA.clearance[i];
+  const base=(c.type||'Letter').split('/')[0].trim().replace(/\s+/g,'_');
+  c.fileName=base+'.pdf';
+  refreshWork();
+}
+function clrSubmit(i){
+  const c=JAS_EIA.clearance[i];
+  if(!c.type){showToast('Select the letter type first');return;}
+  if(!c.fileName){showToast('Upload the letter first');return;}
+  c.submitted=true;c.submittedAt=nowStr();
+  refreshWork();
+}
+
+const PANELS={
+  'jas-eia':{title:'EIA — Approved Report', render:renderJasEiaReport},
+  'jas-emp':{title:'EMP — Pre-Consultation to Submitted Documents (2.1 – 2.6)', render:renderJasEia}
+};
+let activePanel=null;
+
+function nodeClick(nodeId){
+  const f=FLOWS.find(x=>x.id===current);
+  const n=f.nodes.find(x=>x.id===nodeId);
+  if(n&&n.panel&&PANELS[n.panel]){openInline(n.panel);return;}
+  const url=(n&&n.href)||f.work;
+  if(url&&url!=='#'){
+    openWork(n.label+' — '+f.tab, url);
+  }else{
+    showToast(n.label+' — working page not linked yet');
+  }
+}
+function openInline(key){
+  const p=PANELS[key]; activePanel=key;
+  const panel=document.getElementById('workPanel');
+  document.getElementById('workTitle').textContent=p.title;
+  document.getElementById('workFull').style.display='none';
+  document.getElementById('workFrame').style.display='none';
+  const body=document.getElementById('workBody');
+  body.style.display='block'; body.innerHTML=p.render();
+  panel.style.display='block';
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function refreshWork(){
+  if(activePanel)document.getElementById('workBody').innerHTML=PANELS[activePanel].render();
+}
+function openWork(title,url){
+  activePanel=null;
+  const panel=document.getElementById('workPanel');
+  document.getElementById('workTitle').textContent=title;
+  const full=document.getElementById('workFull');
+  full.style.display='inline'; full.href=url;
+  document.getElementById('workBody').style.display='none';
+  const fr=document.getElementById('workFrame');
+  fr.style.display='block'; fr.src=url;
+  panel.style.display='block';
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function closeWork(){
+  activePanel=null;
+  document.getElementById('workPanel').style.display='none';
+  document.getElementById('workFrame').src='about:blank';
+}
+function worklinkClick(ev){
+  ev.preventDefault();
+  const f=FLOWS.find(x=>x.id===current);
+  if(f.work&&f.work!=='#')openWork(f.tab+' — working page',f.work);
+  else showToast(f.tab+' — working page not linked yet');
+  return false;
+}
+function render(){
+  document.getElementById('tabs').innerHTML=
+    FLOWS.map(f=>`<button class="tab ${f.id===current?'active':''}" onclick="switchTab('${f.id}')">${esc(f.tab)}</button>`).join('')
+    +`<button class="gear" onclick="toggleManage()">⚙ Manage</button>`;
+  const f=FLOWS.find(x=>x.id===current)||FLOWS[0];
+  current=f?f.id:null;
+  document.getElementById('flow').innerHTML=f?drawFlow(f):'<div class="empty">No agencies.</div>';
+  document.getElementById('desc').textContent=f?f.desc:'';
+  document.getElementById('worklink').href=f?f.work:'#';
+  document.getElementById('managePanel').style.display=managing?'block':'none';
+  if(managing)renderManage();
+}
+function renderManage(){
+  document.getElementById('agencyList').innerHTML=FLOWS.map(f=>
+    `<div class="p-row"><span class="p-name">${esc(f.tab)}</span>
+     <span style="font-size:13px;color:#9ca3af">${f.nodes.length?f.nodes.length+' steps':'no flow yet'}</span>
+     <button class="p-x" onclick="removeAgency('${f.id}')">Remove</button></div>`).join('');
+}
+function toggleManage(){managing=!managing;render();}
+function switchTab(id){current=id;closeWork();render();}
+function addAgency(){
+  const inp=document.getElementById('newAgency');
+  const name=inp.value.trim();
+  if(!name)return;
+  const id='ag'+Date.now().toString(36);
+  FLOWS.push({id,tab:name,title:name,desc:"",work:"#",nodes:[],edges:[]});
+  inp.value=''; current=id; render();
+}
+function removeAgency(id){
+  const i=FLOWS.findIndex(f=>f.id===id);
+  if(i<0)return;
+  showToast('Removed '+FLOWS[i].tab);
+  FLOWS.splice(i,1);
+  if(current===id)current=FLOWS.length?FLOWS[0].id:null;
+  render();
+}
+render();
+</script>
+</body>
+</html>
