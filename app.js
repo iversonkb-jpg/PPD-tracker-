@@ -1502,8 +1502,25 @@
   }
   function infraSave() { try { localStorage.setItem(infraKey(), JSON.stringify({ flows: INFRA.flows, current: INFRA.current })); } catch (e) { /* ignore */ } }
   let infraManaging = false;
-  let infraMpEditing = false;   // Master Plan pin-placement mode
-  let infraMpStep = null;       // which step a newly-placed pin maps to
+  let infraMpMode = null;   // null | "demarcate"
+  let infraDraft = [];      // in-progress polygon points [[x%,y%], …]
+
+  // ----- per-zone data -----
+  // Each demarcated zone runs its own copy of the flow (same steps, own state/work).
+  // With no zones, node.state/node.work are used directly (agencies without a plan).
+  function infraCurZone() {
+    const f = infraCurFlow();
+    if (!f || !f.masterplan || !f.masterplan.zones || !f.masterplan.zones.length) return null;
+    return f.masterplan.zones.find(function (z) { return z.id === f.masterplan.current; }) || f.masterplan.zones[0];
+  }
+  // The record holding .state/.work for a node in the active context (zone or node).
+  function infraNodeRecord(n) {
+    const z = infraCurZone();
+    if (!z) return n;
+    if (!z.nodes) z.nodes = {};
+    if (!z.nodes[n.id]) z.nodes[n.id] = { state: "todo", work: null };
+    return z.nodes[n.id];
+  }
 
   // Downscale an uploaded image to keep the data URL small enough for localStorage.
   function infraDownscaleImage(file, cb) {
@@ -1522,37 +1539,58 @@
     };
     reader.readAsDataURL(file);
   }
-  // Master Plan: uploaded site-plan image with pins that open flow steps.
+  // Master Plan: uploaded site-plan image + freehand polygon zones, each of which
+  // runs its own progress flow. Selecting a zone loads that zone's flow below.
   function renderMasterplan(f, container) {
     const el = container.querySelector("[data-infra-masterplan]");
     if (!el) return;
     if (!f || !f.nodes.length) { el.innerHTML = ""; return; }
-    if (!f.masterplan) f.masterplan = { img: "", pins: [] };
+    if (!f.masterplan) f.masterplan = { img: "", zones: [], current: null };
     const mp = f.masterplan;
-    if (infraMpStep == null || !f.nodes.some(function (n) { return n.id === infraMpStep; })) infraMpStep = f.nodes[0].id;
+    if (!mp.zones) mp.zones = [];
+    if (mp.zones.length && !mp.zones.some(function (z) { return z.id === mp.current; })) mp.current = mp.zones[0].id;
+    const drawing = infraMpMode === "demarcate";
 
-    let h = '<section class="pc-card"><div class="pc-head-card"><h4 class="pc-card-title" style="margin:0">Master Plan</h4><div style="display:flex;gap:8px">';
+    let h = '<section class="pc-card"><div class="pc-head-card"><h4 class="pc-card-title" style="margin:0">Master Plan</h4><div style="display:flex;gap:8px;flex-wrap:wrap">';
     if (mp.img) {
-      h += '<button type="button" class="btn btn-secondary" style="padding:6px 12px;font-size:12px" data-infra-mp="edit">' + (infraMpEditing ? "Done" : "Place pins") + "</button>" +
+      h += '<button type="button" class="btn ' + (drawing ? "btn-primary" : "btn-secondary") + '" style="padding:6px 12px;font-size:12px" data-infra-mp="demarcate">' + (drawing ? "Cancel" : "＋ Demarcate zone") + "</button>" +
         '<label class="btn btn-secondary" style="padding:6px 12px;font-size:12px;cursor:pointer">Change plan<input type="file" accept="image/*" data-infra-mp-file style="display:none"></label>';
     }
     h += "</div></div>";
     if (!mp.img) {
-      h += '<label class="mp-empty" style="cursor:pointer">⤒ Upload master plan image<input type="file" accept="image/*" data-infra-mp-file style="display:none"></label>';
-    } else {
-      h += '<div class="pc-hint" style="margin-top:0;margin-bottom:8px">' +
-        (infraMpEditing ? "Select a step, then click on the plan to drop a pin. Click a pin to remove it." : "Click a pin to open that step.") + "</div>";
-      if (infraMpEditing) {
-        h += '<select class="sd-input" style="max-width:300px;margin-bottom:10px" data-infra-mp-step>' +
-          f.nodes.map(function (n) { return '<option value="' + esc(n.id) + '"' + (infraMpStep === n.id ? " selected" : "") + ">" + n.n + ". " + esc(n.label) + "</option>"; }).join("") + "</select>";
-      }
-      h += '<div class="mp-wrap"><img class="mp-img" src="' + mp.img + '" data-infra-mp-img data-mp-edit="' + (infraMpEditing ? "1" : "0") + '" alt="Master plan">';
-      mp.pins.forEach(function (p, i) {
-        const node = f.nodes.find(function (n) { return n.id === p.node; });
-        const c = INFRA_COLORS[(node && node.state) || "todo"] || INFRA_COLORS.todo;
-        h += '<button type="button" class="mp-pin" data-infra-mp-pin="' + i + '" title="' + (node ? esc(node.label) : "") + '" style="left:' + p.x + "%;top:" + p.y + "%;background:" + c.fill + ";color:" + c.text + '">' + (node ? node.n : "?") + "</button>";
-      });
-      h += "</div>";
+      el.innerHTML = h + '<label class="mp-empty" style="cursor:pointer">⤒ Upload master plan image<input type="file" accept="image/*" data-infra-mp-file style="display:none"></label></section>';
+      return;
+    }
+    h += '<div class="pc-hint" style="margin-top:0;margin-bottom:8px">' +
+      (drawing ? "Click on the plan to outline a zone (add ≥3 points), then Finish."
+               : (mp.zones.length ? "Click a zone to load its progress flow below." : "Demarcate a zone to start its own progress flow.")) + "</div>";
+    if (mp.zones.length && !drawing) {
+      h += '<div class="agency-grid" style="margin-bottom:10px">' + mp.zones.map(function (z) {
+        return '<span class="agency-chip ' + (z.id === mp.current ? "selected" : "") + '" data-infra-zone-chip="' + esc(z.id) + '" style="cursor:pointer">' + esc(z.name) +
+          ' <button type="button" data-infra-zone-del="' + esc(z.id) + '" title="Delete zone" style="border:none;background:none;color:#b4232a;cursor:pointer;font-weight:800;padding:0 2px;font-size:13px">×</button></span>';
+      }).join("") + "</div>";
+    }
+    h += '<div class="mp-wrap"><img class="mp-img" src="' + mp.img + '" data-infra-mp-img data-mp-mode="' + (drawing ? "demarcate" : "view") + '" alt="Master plan">';
+    h += '<svg class="mp-overlay' + (drawing ? " mp-draw" : "") + '" viewBox="0 0 100 100" preserveAspectRatio="none">';
+    mp.zones.forEach(function (z) {
+      if (!z.points || z.points.length < 3) return;
+      h += '<polygon class="mp-zone' + (z.id === mp.current ? " sel" : "") + '" data-infra-zone="' + esc(z.id) + '" points="' + z.points.map(function (p) { return p[0] + "," + p[1]; }).join(" ") + '"/>';
+    });
+    if (drawing && infraDraft.length) {
+      h += '<polyline class="mp-draft" fill="none" points="' + infraDraft.map(function (p) { return p[0] + "," + p[1]; }).join(" ") + '"/>';
+      infraDraft.forEach(function (p) { h += '<circle class="mp-draftpt" cx="' + p[0] + '" cy="' + p[1] + '" r="0.9"/>'; });
+    }
+    h += "</svg>";
+    if (!drawing) mp.zones.forEach(function (z) {
+      if (!z.points || !z.points.length) return;
+      const cx = z.points.reduce(function (s, p) { return s + p[0]; }, 0) / z.points.length;
+      const cy = z.points.reduce(function (s, p) { return s + p[1]; }, 0) / z.points.length;
+      h += '<span class="mp-zlabel' + (z.id === mp.current ? " sel" : "") + '" data-infra-zone-chip="' + esc(z.id) + '" style="left:' + cx + "%;top:" + cy + '%">' + esc(z.name) + "</span>";
+    });
+    h += "</div>";
+    if (drawing) {
+      h += '<div class="sd-actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-infra-mp="finish"' + (infraDraft.length < 3 ? ' disabled style="opacity:.5;cursor:not-allowed"' : "") + ">Finish zone</button>" +
+        '<button type="button" class="btn btn-secondary" data-infra-mp="undo"' + (infraDraft.length ? "" : ' disabled style="opacity:.5"') + ">Undo point</button></div>";
     }
     el.innerHTML = h + "</section>";
   }
@@ -1587,7 +1625,7 @@
       }
     });
     f.nodes.forEach(function (n) {
-      const x = cx(n.col), y = cy(n.lane), c = INFRA_COLORS[n.state] || INFRA_COLORS.todo;
+      const x = cx(n.col), y = cy(n.lane), c = INFRA_COLORS[infraNodeRecord(n).state] || INFRA_COLORS.todo;
       const above = n.lane < 0;
       svg += '<g class="dash-svg-node" data-infra-node="' + esc(n.id) + '">' +
         '<circle cx="' + x + '" cy="' + y + '" r="' + R + '" fill="' + c.fill + '" stroke="' + c.stroke + '" stroke-width="2"/>' +
@@ -1672,15 +1710,15 @@
     return (f && f.defaultPanel) || null;
   }
   function infraEnsureWork(n) {
-    const pt = infraPanelType(n);
-    if (pt === "jas-emp" || pt === "workflow") { if (!n.work) n.work = infraEmpDefault(); }
-    else if (pt === "jas-eia" || pt === "link") { if (!n.work) n.work = { date: "—" }; }
+    const pt = infraPanelType(n), rec = infraNodeRecord(n);
+    if (pt === "jas-emp" || pt === "workflow") { if (!rec.work) rec.work = infraEmpDefault(); }
+    else if (pt === "jas-eia" || pt === "link") { if (!rec.work) rec.work = { date: "—" }; }
   }
   // Generic "approved document" link panel (e.g. Majlis KM Approval → MKM 7.4).
   // Driven by node.heading + node.linkLabel so adding one is a data change.
-  function linkPanelHtml(n) {
+  function linkPanelHtml(n, work) {
     return '<h4 class="pc-card-title" style="font-size:19px">' + esc(n.heading || n.label) + "</h4>" +
-      '<div class="if-linkrow"><a href="#" onclick="return false">' + esc(n.linkLabel || ("Link to approved " + n.label)) + '</a><span style="font-weight:700">' + esc((n.work && n.work.date) || "—") + "</span></div>";
+      '<div class="if-linkrow"><a href="#" onclick="return false">' + esc(n.linkLabel || ("Link to approved " + n.label)) + '</a><span style="font-weight:700">' + esc((work && work.date) || "—") + "</span></div>";
   }
   // Real file upload: shows the picked filename as a chip; otherwise a button that
   // opens the file dialog (hidden <input type=file>). `val` is the stored filename.
@@ -1792,11 +1830,12 @@
     const n = infraNode(infraPanelNode);
     if (!n) { panelEl.innerHTML = ""; return; }
     let title, body;
-    const pt = infraPanelType(n);
-    if (pt === "jas-eia") { title = "EIA — Approved Report"; body = eiaHtml(n.work); }
-    else if (pt === "jas-emp") { title = "EMP — Environmental Management Plan"; body = empHtml(n.work, n.n); }
-    else if (pt === "workflow") { title = n.heading || n.label; body = empHtml(n.work, n.n); }
-    else if (pt === "link") { title = n.heading || n.label; body = linkPanelHtml(n); }
+    const pt = infraPanelType(n), rec = infraNodeRecord(n);
+    const zoneTag = infraCurZone() ? ' <span class="pc-hint" style="display:inline;font-weight:400">· ' + esc(infraCurZone().name) + "</span>" : "";
+    if (pt === "jas-eia") { title = "EIA — Approved Report"; body = eiaHtml(rec.work); }
+    else if (pt === "jas-emp") { title = "EMP — Environmental Management Plan" + zoneTag; body = empHtml(rec.work, n.n); }
+    else if (pt === "workflow") { title = (n.heading || n.label) + zoneTag; body = empHtml(rec.work, n.n); }
+    else if (pt === "link") { title = n.heading || n.label; body = linkPanelHtml(n, rec.work); }
     else { title = n.label; body = '<p class="sd-note">Working page for this step is coming next.</p>'; }
     panelEl.innerHTML = '<section class="pc-card" style="border-color:var(--brand-green);margin-top:14px">' +
       '<div class="pc-head-card"><div class="pc-authority">' + esc(title) + "</div>" +
@@ -1814,8 +1853,9 @@
     if (p) p.scrollIntoView({ behavior: "smooth", block: "start" });
   }
   function handleInfraAct(el) {
-    const n = infraNode(infraPanelNode); if (!n || !n.work) return;
-    const w = n.work, act = el.getAttribute("data-infra-act"), i = +el.getAttribute("data-i");
+    const n = infraNode(infraPanelNode); if (!n) return;
+    const rec = infraNodeRecord(n); if (!rec.work) return;
+    const w = rec.work, act = el.getAttribute("data-infra-act"), i = +el.getAttribute("data-i");
     const A = w.appeal, a = A && A.list[A.active];
     if (act === "cancel") { infraRenderPanel(); return; }
     if (act === "pcConfirm") { const v = (document.getElementById("if-pcdate" + i) || {}).value; if (!v) { alert("Pick a date first"); return; } w.rounds[i].date = v; w.rounds[i].confirmed = true; w.rounds[i].confirmedAt = infraNow(); }
@@ -1834,9 +1874,10 @@
   }
   // Real file upload: store the picked file's name against the right field.
   function handleInfraFile(el) {
-    const n = infraNode(infraPanelNode); if (!n || !n.work) return;
+    const n = infraNode(infraPanelNode); if (!n) return;
+    const rec = infraNodeRecord(n); if (!rec.work) return;
     const f = el.files && el.files[0]; if (!f) return;
-    const w = n.work, act = el.getAttribute("data-infra-file"), i = +el.getAttribute("data-i");
+    const w = rec.work, act = el.getAttribute("data-infra-file"), i = +el.getAttribute("data-i");
     const a = w.appeal && w.appeal.list[w.appeal.active];
     if (act === "pcUpload") w.rounds[i].notesFile = f.name;
     else if (act === "meetingNote") w.meetingNoteFile = f.name;
@@ -1850,8 +1891,9 @@
     infraRenderPanel();
   }
   function handleInfraChange(el) {
-    const n = infraNode(infraPanelNode); if (!n || !n.work) return;
-    const w = n.work, act = el.getAttribute("data-infra-change"), i = +el.getAttribute("data-i"), v = el.value;
+    const n = infraNode(infraPanelNode); if (!n) return;
+    const rec = infraNodeRecord(n); if (!rec.work) return;
+    const w = rec.work, act = el.getAttribute("data-infra-change"), i = +el.getAttribute("data-i"), v = el.value;
     const a = w.appeal && w.appeal.list[w.appeal.active];
     if (act === "clrType") w.clearance[i].type = v;
     else if (act === "clrDate") w.clearance[i].date = v;
@@ -1864,8 +1906,9 @@
     infraRenderPanel();
   }
   function handleInfraInput(el) {
-    const n = infraNode(infraPanelNode); if (!n || !n.work) return;
-    const w = n.work, act = el.getAttribute("data-infra-input"), i = +el.getAttribute("data-i");
+    const n = infraNode(infraPanelNode); if (!n) return;
+    const rec = infraNodeRecord(n); if (!rec.work) return;
+    const w = rec.work, act = el.getAttribute("data-infra-input"), i = +el.getAttribute("data-i");
     if (act === "clrRef") w.clearance[i].ref = el.value;
     else if (act === "clrComment") w.clearance[i].comment = el.value;
     else if (act === "apComments") w.appeal.list[w.appeal.active].iv.comments = el.value;
@@ -1874,23 +1917,46 @@
   if (masterBody) {
     masterBody.addEventListener("click", function (e) {
       const tab = e.target.closest("[data-infra-tab]");
-      if (tab) { INFRA.current = tab.getAttribute("data-infra-tab"); infraPanelNode = null; infraMpEditing = false; const p = masterBody.querySelector("[data-infra-panel]"); if (p) p.innerHTML = ""; renderInfra(masterBody); return; }
-      // ----- Master Plan interactions -----
-      if (e.target.closest("[data-infra-mp='edit']")) { infraMpEditing = !infraMpEditing; renderMasterplan(infraCurFlow(), masterBody); return; }
-      const pin = e.target.closest("[data-infra-mp-pin]");
-      if (pin) {
-        const f = infraCurFlow(); const idx = +pin.getAttribute("data-infra-mp-pin");
-        if (infraMpEditing) { f.masterplan.pins.splice(idx, 1); infraSave(); renderMasterplan(f, masterBody); }
-        else { const pn = f.masterplan.pins[idx]; if (pn) infraNodeClick(pn.node); }
+      if (tab) { INFRA.current = tab.getAttribute("data-infra-tab"); infraPanelNode = null; infraMpMode = null; infraDraft = []; const p = masterBody.querySelector("[data-infra-panel]"); if (p) p.innerHTML = ""; renderInfra(masterBody); return; }
+      // ----- Master Plan · demarcation -----
+      const mpBtn = e.target.closest("[data-infra-mp]");
+      if (mpBtn) {
+        const act = mpBtn.getAttribute("data-infra-mp"), f = infraCurFlow();
+        if (act === "demarcate") { infraMpMode = infraMpMode === "demarcate" ? null : "demarcate"; infraDraft = []; renderMasterplan(f, masterBody); }
+        else if (act === "undo") { infraDraft.pop(); renderMasterplan(f, masterBody); }
+        else if (act === "finish") {
+          if (infraDraft.length < 3) return;
+          const id = "z" + f.masterplan.zones.length + "-" + Date.now().toString(36);
+          f.masterplan.zones.push({ id: id, name: "Zone " + (f.masterplan.zones.length + 1), points: infraDraft.slice(), nodes: {} });
+          f.masterplan.current = id; infraMpMode = null; infraDraft = []; infraPanelNode = null;
+          const p = masterBody.querySelector("[data-infra-panel]"); if (p) p.innerHTML = "";
+          infraSave(); renderInfra(masterBody);
+        }
+        return;
+      }
+      const zoneDel = e.target.closest("[data-infra-zone-del]");
+      if (zoneDel) {
+        const f = infraCurFlow(), id = zoneDel.getAttribute("data-infra-zone-del");
+        f.masterplan.zones = f.masterplan.zones.filter(function (z) { return z.id !== id; });
+        if (f.masterplan.current === id) f.masterplan.current = f.masterplan.zones.length ? f.masterplan.zones[0].id : null;
+        infraPanelNode = null; const p = masterBody.querySelector("[data-infra-panel]"); if (p) p.innerHTML = "";
+        infraSave(); renderInfra(masterBody);
+        return;
+      }
+      const zoneSel = e.target.closest("[data-infra-zone-chip], [data-infra-zone]");
+      if (zoneSel) {
+        const f = infraCurFlow(), id = zoneSel.getAttribute("data-infra-zone-chip") || zoneSel.getAttribute("data-infra-zone");
+        f.masterplan.current = id; infraPanelNode = null;
+        const p = masterBody.querySelector("[data-infra-panel]"); if (p) p.innerHTML = "";
+        infraSave(); renderInfra(masterBody);
         return;
       }
       const mpImg = e.target.closest("[data-infra-mp-img]");
-      if (mpImg && infraMpEditing) {
-        const f = infraCurFlow();
+      if (mpImg && infraMpMode === "demarcate") {
         const x = Math.max(0, Math.min(100, (e.offsetX / mpImg.clientWidth) * 100));
         const y = Math.max(0, Math.min(100, (e.offsetY / mpImg.clientHeight) * 100));
-        f.masterplan.pins.push({ node: infraMpStep, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 });
-        infraSave(); renderMasterplan(f, masterBody);
+        infraDraft.push([Math.round(x * 10) / 10, Math.round(y * 10) / 10]);
+        renderMasterplan(infraCurFlow(), masterBody);
         return;
       }
       if (e.target.closest("[data-infra-manage-toggle]")) { infraManaging = !infraManaging; renderInfra(masterBody); return; }
@@ -1915,12 +1981,10 @@
         const f = infraCurFlow();
         infraDownscaleImage(img, function (dataUrl) {
           if (!f.masterplan) f.masterplan = { img: "", pins: [] };
-          f.masterplan.img = dataUrl; infraMpEditing = false; infraSave(); renderMasterplan(f, masterBody);
+          if (!f.masterplan.zones) f.masterplan.zones = []; f.masterplan.img = dataUrl; infraMpMode = null; infraDraft = []; infraSave(); renderMasterplan(f, masterBody);
         });
         return;
       }
-      const mpStep = e.target.closest("[data-infra-mp-step]");
-      if (mpStep) { infraMpStep = mpStep.value; return; }
       const file = e.target.closest("[data-infra-file]");
       if (file) { handleInfraFile(file); return; }
       const el = e.target.closest("[data-infra-change]");

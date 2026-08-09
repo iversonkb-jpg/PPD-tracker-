@@ -1778,3 +1778,14 @@ body {
 .mp-pin:hover { filter: brightness(0.95); }
 .mp-empty { display: flex; align-items: center; justify-content: center; gap: 10px; border: 1.5px dashed var(--brand-green); border-radius: 10px; padding: 44px 20px; color: var(--brand-green-dark); font-weight: 700; background: var(--white); font-size: 14px; }
 .mp-empty:hover { background: var(--brand-green-light); }
+
+/* ---- Master Infra · Master Plan zones (freehand polygons) ---- */
+.mp-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.mp-zone { fill: rgba(26,122,60,.16); stroke: #1a7a3c; stroke-width: 0.5; pointer-events: auto; cursor: pointer; }
+.mp-zone:hover { fill: rgba(26,122,60,.26); }
+.mp-zone.sel { fill: rgba(31,95,168,.24); stroke: #1f5fa8; stroke-width: 0.8; }
+.mp-overlay.mp-draw .mp-zone { pointer-events: none; }
+.mp-draft { fill: none; stroke: #1f5fa8; stroke-width: 0.6; stroke-dasharray: 1.5 1; }
+.mp-draftpt { fill: #1f5fa8; }
+.mp-zlabel { position: absolute; transform: translate(-50%, -50%); background: rgba(255,255,255,.9); border: 1px solid var(--brand-green); color: var(--brand-green-dark); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; cursor: pointer; white-space: nowrap; font-family: var(--font-sans); }
+.mp-zlabel.sel { border-color: #1f5fa8; color: #1f5fa8; }
