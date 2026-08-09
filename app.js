@@ -599,7 +599,7 @@
     masterBody.innerHTML = '<p class="sd-loading">Loading…</p>';
     fetch(url, { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
-      .then(function (html) { masterBody.innerHTML = html; })
+      .then(function (html) { masterBody.innerHTML = html; if (masterBody.querySelector("[data-infra-flow]")) renderInfra(masterBody); })
       .catch(function () { masterBody.innerHTML = '<p class="sd-error">Couldn\'t load this page.</p>'; });
   }
 
@@ -609,6 +609,197 @@
     const infra = document.getElementById("pillMasterInfra");
     if (infra) infra.addEventListener("click", function () { showMasterBody(CONTENT_BASE + "master-infra.html"); });
   })();
+
+  /* ============================================================
+     MASTER INFRA — native module (app design language)
+     Agency tabs + data-driven SVG flow diagram + manage add/remove.
+     Data/structure ported from master-infra-flows.html; JAS working
+     panels come in a later phase. State persists per project. */
+  const INFRA_FLOWS_SEED = [
+    { id: "jas", tab: "JAS", title: "JAS — Environmental", desc: "EIA first, then EMP.",
+      nodes: [
+        { n: 1, id: "eia", label: "EIA", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "jas-eia" },
+        { n: 2, id: "emp", label: "EMP", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "jas-emp" }
+      ], edges: [{ from: "eia", to: "emp" }] },
+    { id: "majlis", tab: "Majlis", title: "Majlis — Earthwork, R&D, Street Lighting & Landscape",
+      desc: "After KM approval, Earthwork and R&D run concurrently. Street Lighting and Landscape follow R&D, concurrently with each other.",
+      nodes: [
+        { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 2, id: "ew", label: "Earthwork", col: 1, lane: -1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 3, id: "rd", label: "R&D", col: 1, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 4, id: "sl", label: "Street Lighting", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 5, id: "ls", label: "Landscape", col: 2, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+      ], edges: [{ from: "km", to: "ew" }, { from: "km", to: "rd" }, { from: "rd", to: "sl" }, { from: "rd", to: "ls" }] },
+    { id: "jkr", tab: "JKR", title: "JKR — Road Safety", desc: "TIA and RSA stages in sequence.",
+      nodes: [
+        { n: 1, id: "r1", label: "TIA, RSA 1 & 2", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 2, id: "r3", label: "RSA 3", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 3, id: "s1", label: "RSA 4 Stage 1", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 4, id: "s2", label: "RSA 4 Stage 2", col: 3, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 5, id: "s3", label: "RSA 4 Stage 3", col: 4, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 6, id: "r5", label: "RSA 5", col: 5, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+      ], edges: [{ from: "r1", to: "r3" }, { from: "r3", to: "s1" }, { from: "s1", to: "s2" }, { from: "s2", to: "s3" }, { from: "s3", to: "r5" }] },
+    { id: "iwk", tab: "IWK", title: "IWK — Sewerage (PDC)",
+      desc: "PDC 1–2, then two routes: with an STP, go through HAZOP and PDC 3–5 before PDC 6; with no STP, skip straight from PDC 2 to PDC 6. Both routes finish PDC 6 → 7 → 8.",
+      nodes: [
+        { n: 1, id: "p1", label: "PDC 1", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 2, id: "p2", label: "PDC 2", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 3, id: "hz", label: "HAZOP", col: 2, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 4, id: "p3", label: "PDC 3", col: 3, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 5, id: "p4", label: "PDC 4", col: 4, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 6, id: "p5", label: "PDC 5", col: 5, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 7, id: "p6", label: "PDC 6", col: 6, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 8, id: "p7", label: "PDC 7", col: 7, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 9, id: "p8", label: "PDC 8", col: 8, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+      ], edges: [
+        { from: "p1", to: "p2" }, { from: "p2", to: "hz", days: "with STP" },
+        { from: "hz", to: "p3" }, { from: "p3", to: "p4" }, { from: "p4", to: "p5" }, { from: "p5", to: "p6" },
+        { from: "p2", to: "p6", days: "no STP" }, { from: "p6", to: "p7" }, { from: "p7", to: "p8" }] },
+    { id: "ais", tab: "AIS", title: "AIS — Water Reticulation", desc: "Concept (MKM) and detail reticulation, then QT 1–7 in sequence.",
+      nodes: [
+        { n: 1, id: "c", label: "Concept (MKM)", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 2, id: "dr", label: "Detail Reticulation", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 3, id: "q1", label: "QT 1", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 4, id: "q2", label: "QT 2", col: 3, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 5, id: "q3", label: "QT 3", col: 4, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 6, id: "q4", label: "QT 4", col: 5, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 7, id: "q5", label: "QT 5", col: 6, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 8, id: "q6", label: "QT 6", col: 7, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 9, id: "q7", label: "QT 7", col: 8, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+      ], edges: [
+        { from: "c", to: "dr" }, { from: "dr", to: "q1" }, { from: "q1", to: "q2" }, { from: "q2", to: "q3" },
+        { from: "q3", to: "q4" }, { from: "q4", to: "q5" }, { from: "q5", to: "q6" }, { from: "q6", to: "q7" }] },
+    { id: "telco", tab: "Telco", title: "Telco", desc: "", nodes: [], edges: [] },
+    { id: "tnb", tab: "TNB", title: "TNB", desc: "", nodes: [], edges: [] },
+    { id: "jps", tab: "JPS", title: "JPS", desc: "", nodes: [], edges: [] }
+  ];
+  const INFRA_COLORS = {
+    done:   { fill: "#1a7a3c", stroke: "#14602f", text: "#fff" },
+    active: { fill: "#e0a416", stroke: "#a3670b", text: "#fff" },
+    late:   { fill: "#c62828", stroke: "#8f1d1d", text: "#fff" },
+    todo:   { fill: "#e9ece9", stroke: "#c3cac5", text: "#4d5852" }
+  };
+  let INFRA = null;   // { flows, current } runtime state
+  function infraKey() { return "infra:" + [regionSelect.value, buSelect.value, projectSelect.value].join("|"); }
+  function infraSeed() { return { flows: JSON.parse(JSON.stringify(INFRA_FLOWS_SEED)), current: INFRA_FLOWS_SEED[0].id }; }
+  function infraLoad() {
+    try { const raw = localStorage.getItem(infraKey()); if (raw) { const d = JSON.parse(raw); if (d && d.flows) { INFRA = { flows: d.flows, current: d.current || d.flows[0] && d.flows[0].id }; return; } } } catch (e) { /* ignore */ }
+    INFRA = infraSeed();
+  }
+  function infraSave() { try { localStorage.setItem(infraKey(), JSON.stringify({ flows: INFRA.flows, current: INFRA.current })); } catch (e) { /* ignore */ } }
+  let infraManaging = false;
+
+  function drawInfraFlow(f) {
+    if (!f.nodes.length) return '<div class="pc-hint" style="padding:50px 16px;text-align:center">Flow for ' + esc(f.title) + " not defined yet.</div>";
+    const COLW = 185, LANEH = 132, R = 28, PADX = 80;
+    const lanes = f.nodes.map(function (n) { return n.lane; });
+    const minL = Math.min.apply(null, lanes), maxL = Math.max.apply(null, lanes);
+    const cols = Math.max.apply(null, f.nodes.map(function (n) { return n.col; }));
+    const topPad = (minL < 0 ? 96 : 66), botPad = (maxL > 0 ? 96 : 66);
+    const H = (maxL - minL) * LANEH + topPad + botPad + 50;
+    const W = PADX * 2 + cols * COLW;
+    const cy = function (l) { return topPad + (l - minL) * LANEH + 28; };
+    const cx = function (c) { return PADX + c * COLW; };
+    const byId = {}; f.nodes.forEach(function (n) { byId[n.id] = n; });
+    let svg = '<svg viewBox="0 0 ' + W + " " + H + '" width="' + W + '" height="' + H + '" font-family="var(--font-sans)" style="max-width:none">' +
+      '<defs><marker id="infarr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#9aa39b"/></marker></defs>';
+    f.edges.forEach(function (e) {
+      const a = byId[e.from], b = byId[e.to];
+      const ax = cx(a.col) + R, ay = cy(a.lane), bx = cx(b.col) - R - 4, by = cy(b.lane);
+      let path, px, py;
+      if (a.lane === b.lane) { path = "M " + ax + " " + ay + " L " + bx + " " + by; px = (ax + bx) / 2; py = ay - 20; }
+      else { const jx = ax + (cx(b.col) - R - ax) * 0.42; path = "M " + ax + " " + ay + " L " + jx + " " + ay + " L " + jx + " " + by + " L " + bx + " " + by; px = (jx + bx) / 2; py = by - 20; }
+      svg += '<path d="' + path + '" fill="none" stroke="#9aa39b" stroke-width="2.5" marker-end="url(#infarr)"/>';
+      if (e.days) {
+        const tw = e.days.length * 6.4 + 20;
+        svg += '<rect x="' + (px - tw / 2) + '" y="' + (py - 11) + '" width="' + tw + '" height="20" rx="10" fill="#fff" stroke="#c3cac5"/>' +
+          '<text x="' + px + '" y="' + (py + 3) + '" text-anchor="middle" font-size="11" fill="var(--muted)" font-weight="600">' + esc(e.days) + "</text>";
+      }
+    });
+    f.nodes.forEach(function (n) {
+      const x = cx(n.col), y = cy(n.lane), c = INFRA_COLORS[n.state] || INFRA_COLORS.todo;
+      const above = n.lane < 0;
+      svg += '<g class="dash-svg-node" data-infra-node="' + esc(n.id) + '">' +
+        '<circle cx="' + x + '" cy="' + y + '" r="' + R + '" fill="' + c.fill + '" stroke="' + c.stroke + '" stroke-width="2"/>' +
+        '<text x="' + x + '" y="' + (y + 6) + '" text-anchor="middle" font-size="18" font-weight="700" fill="' + c.text + '">' + n.n + "</text>";
+      const l1 = "TS " + n.ts + " · AS " + n.as, l2 = "TE " + n.te + " · AE " + n.ae;
+      const ly = above ? [y - R - 44, y - R - 28, y - R - 15] : [y + R + 20, y + R + 36, y + R + 50];
+      svg += '<text x="' + x + '" y="' + ly[0] + '" text-anchor="middle" font-size="13" font-weight="600" fill="var(--ink)">' + esc(n.label) + "</text>" +
+        '<text x="' + x + '" y="' + ly[1] + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + esc(l1) + "</text>" +
+        '<text x="' + x + '" y="' + ly[2] + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + esc(l2) + "</text></g>";
+    });
+    return svg + "</svg>";
+  }
+  function infraLegendHtml() {
+    function li(dot, t) { return '<span class="legend-item"><span class="legend-dot ' + dot + '"></span>' + t + "</span>"; }
+    return '<div class="dash-legend" style="display:flex;gap:16px;flex-wrap:wrap">' +
+      li("ld-completed", "Done") + li("ld-in-progress", "In progress") + li("ld-delayed", "Late / query") + li("ld-na", "Upcoming") +
+      '<span class="dash-key">TS/TE = target start/end · AS/AE = actual</span></div>';
+  }
+  function renderInfra(container) {
+    if (!INFRA) infraLoad();
+    const flows = INFRA.flows;
+    if (!flows.some(function (f) { return f.id === INFRA.current; })) INFRA.current = flows.length ? flows[0].id : null;
+    const f = flows.find(function (x) { return x.id === INFRA.current; });
+    // Tabs
+    const tabsEl = container.querySelector("[data-infra-tabs]");
+    if (tabsEl) tabsEl.innerHTML = flows.map(function (x) {
+      return '<button type="button" class="pill' + (x.id === INFRA.current ? " active" : "") + '" data-infra-tab="' + esc(x.id) + '">' + esc(x.tab) + "</button>";
+    }).join("") + '<button type="button" class="pill" data-infra-manage-toggle title="Add / remove agencies">⚙ Manage</button>';
+    // Manage panel
+    const manageEl = container.querySelector("[data-infra-manage]");
+    if (manageEl) {
+      manageEl.hidden = !infraManaging;
+      if (infraManaging) {
+        manageEl.innerHTML = '<section class="pc-card"><h4 class="pc-card-title">Manage agencies</h4>' +
+          flows.map(function (x) {
+            return '<div class="da-item"><span>' + esc(x.tab) + ' <span class="pc-hint" style="display:inline">· ' + (x.nodes.length ? x.nodes.length + " steps" : "no flow yet") + '</span></span>' +
+              '<button type="button" class="btn btn-secondary" style="padding:6px 14px;font-size:12px;color:#b4232a" data-infra-remove="' + esc(x.id) + '">Remove</button></div>';
+          }).join("") +
+          '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><input class="sd-input" id="infra-new-agency" placeholder="New agency name (e.g. BOMBA)" style="flex:1;min-width:160px">' +
+          '<button type="button" class="btn btn-primary" data-infra-add>Add</button></div></section>';
+      } else { manageEl.innerHTML = ""; }
+    }
+    // Flow + legend + desc
+    const flowEl = container.querySelector("[data-infra-flow]");
+    if (flowEl) flowEl.innerHTML = f ? drawInfraFlow(f) : '<div class="pc-hint">No agencies.</div>';
+    const legEl = container.querySelector("[data-infra-legend]");
+    if (legEl) legEl.innerHTML = f && f.nodes.length ? infraLegendHtml() : "";
+    const descEl = container.querySelector("[data-infra-desc]");
+    if (descEl) descEl.textContent = f ? f.desc : "";
+    infraSave();
+  }
+  function infraNodeClick(nodeId) {
+    const f = INFRA.flows.find(function (x) { return x.id === INFRA.current; });
+    const n = f && f.nodes.find(function (x) { return x.id === nodeId; });
+    if (!n) return;
+    const panelEl = masterBody.querySelector("[data-infra-panel]");
+    if (!panelEl) return;
+    // JAS panels come in the next phase; placeholder for now.
+    panelEl.innerHTML = '<section class="pc-card" style="border-color:var(--brand-green);margin-top:14px">' +
+      '<div class="pc-head-card"><div class="pc-authority">' + esc(n.label) + " — " + esc(f.tab) + "</div>" +
+      '<button type="button" class="btn btn-secondary" style="padding:6px 14px;font-size:12px" data-infra-panel-close>✕</button></div>' +
+      '<p class="sd-note" style="margin-top:12px">Working page for this step is coming next.</p></section>';
+    panelEl.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  if (masterBody) {
+    masterBody.addEventListener("click", function (e) {
+      const tab = e.target.closest("[data-infra-tab]");
+      if (tab) { INFRA.current = tab.getAttribute("data-infra-tab"); const p = masterBody.querySelector("[data-infra-panel]"); if (p) p.innerHTML = ""; renderInfra(masterBody); return; }
+      if (e.target.closest("[data-infra-manage-toggle]")) { infraManaging = !infraManaging; renderInfra(masterBody); return; }
+      const rm = e.target.closest("[data-infra-remove]");
+      if (rm) { const id = rm.getAttribute("data-infra-remove"); INFRA.flows = INFRA.flows.filter(function (x) { return x.id !== id; }); if (INFRA.current === id) INFRA.current = INFRA.flows.length ? INFRA.flows[0].id : null; renderInfra(masterBody); return; }
+      if (e.target.closest("[data-infra-add]")) {
+        const inp = document.getElementById("infra-new-agency"); const name = inp && inp.value.trim();
+        if (!name) { alert("Enter an agency name."); return; }
+        INFRA.flows.push({ id: "ag" + INFRA.flows.length + "-" + name.toLowerCase().replace(/[^a-z0-9]/g, ""), tab: name, title: name, desc: "", nodes: [], edges: [] });
+        INFRA.current = INFRA.flows[INFRA.flows.length - 1].id; renderInfra(masterBody); return;
+      }
+      if (e.target.closest("[data-infra-panel-close]")) { const p = masterBody.querySelector("[data-infra-panel]"); if (p) p.innerHTML = ""; return; }
+      const node = e.target.closest("[data-infra-node]");
+      if (node) { infraNodeClick(node.getAttribute("data-infra-node")); return; }
+    });
+  }
 
   /* ---------- Step selection + content fetch ---------- */
   // opts.scrollToStep (default true): whether to scroll the timeline node

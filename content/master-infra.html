@@ -1,9 +1,31 @@
 <!-- ============================================================
      MASTER INFRA — body content
-     Owner: Infra team.  Edit ONLY this file for Master Infra content.
-     Loaded by app.js when the "Master Infra" pill is clicked.
+     Rendered natively by app.js (renderInfra) in the app's KM design
+     language. Structure/data ported from master-infra-flows.html.
 ============================================================ -->
-<div class="sd-body">
-  <h3>Master Infra</h3>
-  <p>Start building the Master Infra body here.</p>
+<div class="pc-main" id="infraRoot">
+
+  <div class="pc-head-card" style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+    <div>
+      <h3 style="margin:0">Master Infra</h3>
+      <div class="pc-hint" style="margin-top:4px">Click a step to open its working page. Switch agency with the tabs.</div>
+    </div>
+  </div>
+
+  <!-- Agency tabs + Manage (rendered by app.js) -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center" data-infra-tabs></div>
+
+  <!-- Manage agencies panel (rendered by app.js when open) -->
+  <div data-infra-manage hidden></div>
+
+  <!-- Flow diagram + legend -->
+  <section class="pc-card">
+    <div style="overflow-x:auto" data-infra-flow></div>
+    <div data-infra-legend style="margin-top:10px"></div>
+    <div class="pc-hint" data-infra-desc style="margin-top:8px"></div>
+  </section>
+
+  <!-- Working panel opens here, beneath the diagram -->
+  <div data-infra-panel></div>
+
 </div>
