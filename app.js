@@ -1426,7 +1426,7 @@
         { from: "p1", to: "p2" }, { from: "p2", to: "hz", days: "with STP" },
         { from: "hz", to: "p3" }, { from: "p3", to: "p4" }, { from: "p4", to: "p5" }, { from: "p5", to: "p6" },
         { from: "p2", to: "p6", days: "no STP" }, { from: "p6", to: "p7" }, { from: "p7", to: "p8" }] },
-    { id: "ais", tab: "AIS", title: "AIS — Water Reticulation", desc: "Concept (MKM) and detail reticulation, then QT 1–7 in sequence.",
+    { id: "ais", tab: "AIS", title: "AIS — Water Reticulation", desc: "Concept (MKM) and detail reticulation, then QT 1–11 in sequence.",
       nodes: [
         { n: 1, id: "c", label: "Concept (MKM)", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 2, id: "dr", label: "Detail Reticulation", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
@@ -1436,13 +1436,33 @@
         { n: 6, id: "q4", label: "QT 4", col: 5, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 7, id: "q5", label: "QT 5", col: 6, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 8, id: "q6", label: "QT 6", col: 7, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 9, id: "q7", label: "QT 7", col: 8, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+        { n: 9, id: "q7", label: "QT 7", col: 8, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 10, id: "q8", label: "QT 8", col: 9, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 11, id: "q9", label: "QT 9", col: 10, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 12, id: "q10", label: "QT 10", col: 11, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 13, id: "q11", label: "QT 11", col: 12, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
       ], edges: [
         { from: "c", to: "dr" }, { from: "dr", to: "q1" }, { from: "q1", to: "q2" }, { from: "q2", to: "q3" },
-        { from: "q3", to: "q4" }, { from: "q4", to: "q5" }, { from: "q5", to: "q6" }, { from: "q6", to: "q7" }] },
-    { id: "telco", tab: "Telco", title: "Telco", desc: "", nodes: [], edges: [] },
-    { id: "tnb", tab: "TNB", title: "TNB", desc: "", nodes: [], edges: [] },
-    { id: "jps", tab: "JPS", title: "JPS", desc: "", nodes: [], edges: [] }
+        { from: "q3", to: "q4" }, { from: "q4", to: "q5" }, { from: "q5", to: "q6" }, { from: "q6", to: "q7" },
+        { from: "q7", to: "q8" }, { from: "q8", to: "q9" }, { from: "q9", to: "q10" }, { from: "q10", to: "q11" }] },
+    { id: "telco", tab: "Telco", title: "Telco — Telecommunications", desc: "KM approval, then detail approval.",
+      nodes: [
+        { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 2, id: "da", label: "Detail Approval", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+      ], edges: [{ from: "km", to: "da" }] },
+    { id: "tnb", tab: "TNB", title: "TNB — Electricity Supply", desc: "KM approval, supply application, PIAT, CSP, then energisation.",
+      nodes: [
+        { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 2, id: "sa", label: "Supply Application", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 3, id: "piat", label: "PIAT", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 4, id: "csp", label: "CSP", col: 3, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 5, id: "en", label: "Energisation", col: 4, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+      ], edges: [{ from: "km", to: "sa" }, { from: "sa", to: "piat" }, { from: "piat", to: "csp" }, { from: "csp", to: "en" }] },
+    { id: "jps", tab: "JPS", title: "JPS — Drainage & Irrigation", desc: "KM approval, then detail approval.",
+      nodes: [
+        { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 2, id: "da", label: "Detail Approval", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+      ], edges: [{ from: "km", to: "da" }] }
   ];
   const INFRA_COLORS = {
     done:   { fill: "#1a7a3c", stroke: "#14602f", text: "#fff" },
@@ -1453,9 +1473,31 @@
   let INFRA = null;   // { flows, current } runtime state
   function infraKey() { return "infra:" + [regionSelect.value, buSelect.value, projectSelect.value].join("|"); }
   function infraSeed() { return { flows: JSON.parse(JSON.stringify(INFRA_FLOWS_SEED)), current: INFRA_FLOWS_SEED[0].id }; }
+  // Load = latest seed structure (so flow definition updates always show) with
+  // the user's saved work (node.work, states, dates) overlaid per node, plus any
+  // custom agencies they added. This keeps definitions in code and data in storage.
   function infraLoad() {
-    try { const raw = localStorage.getItem(infraKey()); if (raw) { const d = JSON.parse(raw); if (d && d.flows) { INFRA = { flows: d.flows, current: d.current || d.flows[0] && d.flows[0].id }; return; } } } catch (e) { /* ignore */ }
-    INFRA = infraSeed();
+    const seed = infraSeed();
+    let stored = null;
+    try { const raw = localStorage.getItem(infraKey()); if (raw) stored = JSON.parse(raw); } catch (e) { /* ignore */ }
+    if (!stored || !stored.flows) { INFRA = seed; return; }
+    const storedById = {}; stored.flows.forEach(function (f) { storedById[f.id] = f; });
+    seed.flows.forEach(function (sf) {
+      const stf = storedById[sf.id];
+      if (!stf) return;
+      const stNode = {}; (stf.nodes || []).forEach(function (n) { stNode[n.id] = n; });
+      sf.nodes.forEach(function (sn) {
+        const n = stNode[sn.id];
+        if (!n) return;
+        if (n.work !== undefined) sn.work = n.work;
+        if (n.state) sn.state = n.state;
+        ["ts", "as", "te", "ae"].forEach(function (k) { if (n[k] !== undefined) sn[k] = n[k]; });
+      });
+    });
+    // Preserve custom agencies the user added (ids not in the seed).
+    const seedIds = {}; seed.flows.forEach(function (f) { seedIds[f.id] = true; });
+    stored.flows.forEach(function (sf) { if (!seedIds[sf.id]) seed.flows.push(sf); });
+    INFRA = { flows: seed.flows, current: (stored.current && seed.flows.some(function (f) { return f.id === stored.current; })) ? stored.current : seed.flows[0].id };
   }
   function infraSave() { try { localStorage.setItem(infraKey(), JSON.stringify({ flows: INFRA.flows, current: INFRA.current })); } catch (e) { /* ignore */ } }
   let infraManaging = false;
