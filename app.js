@@ -769,35 +769,233 @@
     if (descEl) descEl.textContent = f ? f.desc : "";
     infraSave();
   }
-  function infraNodeClick(nodeId) {
-    const f = INFRA.flows.find(function (x) { return x.id === INFRA.current; });
-    const n = f && f.nodes.find(function (x) { return x.id === nodeId; });
-    if (!n) return;
+  /* ----- JAS working panels (EIA + EMP 2.1–2.8), app design language ----- */
+  const INFRA_LETTER_TYPES = ["Tiada Halangan Letter / Approval Letter", "Ulasan / Comment Letter", "Rejection Letter", "NA"];
+  const INFRA_CLS_TYPES = ["Appeal", "Compliance"];
+  const INFRA_IMPACT_TYPES = ["Time & cost impact", "Time impact only", "Cost impact only", "No impact"];
+  const INFRA_MEET_TYPES = ["Meeting required", "No meeting required"];
+  let infraPanelNode = null;
+  function infraNow() {
+    const dt = new Date();
+    return dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) + ", " + dt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  }
+  function infraCurFlow() { return INFRA.flows.find(function (x) { return x.id === INFRA.current; }); }
+  function infraNode(id) { const f = infraCurFlow(); return f && f.nodes.find(function (n) { return n.id === id; }); }
+  function infraAppealBlank(n) { return { n: n, cls: "", impact: "", i: { file: "", date: "", submitted: false, at: "" }, ii: { req: "", date: "", submitted: false, at: "" }, iv: { doc: "", outcome: null, comments: "" } }; }
+  function infraEmpDefault() {
+    return {
+      rounds: [{ n: 1, date: "", confirmed: false, confirmedAt: "", notesUploaded: false }],
+      meetingNote: false,
+      revise: { date: "", confirmed: false, confirmedAt: "" },
+      submissions: [{ n: 1, uploaded: false, status: "in-review" }],
+      submitted: { docs: false, ack: false },
+      clearance: [{ rev: 0, type: "", fileName: "", date: "", ref: "", comment: "", submitted: false, submittedAt: "" }],
+      appeal: { active: 0, list: [infraAppealBlank(1)] }
+    };
+  }
+  function infraEnsureWork(n) {
+    if (n.panel === "jas-emp") { if (!n.work) n.work = infraEmpDefault(); }
+    else if (n.panel === "jas-eia") { if (!n.work) n.work = { date: "—" }; }
+  }
+  function ifUpload(label, done, act, i) {
+    return '<div class="if-item"><span>' + esc(label) + "</span>" +
+      (done ? '<span class="if-stamp"><span class="if-dot"></span><b>Uploaded</b></span>'
+            : '<button type="button" class="btn btn-secondary" style="padding:7px 16px;font-size:12.5px" data-infra-act="' + act + '" data-i="' + i + '">Upload</button>') + "</div>";
+  }
+  function ifStamp(when) { return '<span class="if-stamp" style="margin-top:12px"><span class="if-dot"></span><b>System submitted</b> <span class="if-time">' + esc(when) + "</span></span>"; }
+  function eiaHtml(w) {
+    return '<h4 class="pc-card-title" style="font-size:19px">Approved Environmental Impact Assessment Report</h4>' +
+      '<div class="if-linkrow"><a href="#" onclick="return false">Link to approved report (auto-linked from MKM JAS 6.1)</a><span style="font-weight:700">' + esc(w.date || "—") + "</span></div>";
+  }
+  function empHtml(w) {
+    const rounds = w.rounds, subs = w.submissions;
+    const approved = subs.some(function (s) { return s.status === "approved"; });
+    let h = '<section class="pc-card"><h4 class="pc-card-title">Pre-Consultation</h4>';
+    h += rounds.map(function (r, i) {
+      return '<div class="if-card ' + (r.confirmed ? "ok" : "") + '"><div class="if-title">Pre-Consultation ' + r.n + " " +
+        (r.confirmed ? '<span class="st-chip st-completed">Confirmed</span>' : '<span class="st-chip st-na">Pending</span>') + "</div>" +
+        '<div class="pc-q-label" style="margin-bottom:6px">2.1 Date of pre-consultation (by Consultant)</div>' +
+        (r.confirmed
+          ? '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><input type="date" class="sd-input" style="max-width:240px" value="' + esc(r.date) + '" disabled><span class="if-stamp"><span class="if-dot"></span><b>Confirmed</b> <span class="if-time">' + esc(r.confirmedAt) + "</span></span></div>"
+          : '<input type="date" class="sd-input" style="max-width:240px" id="if-pcdate' + i + '"><div class="sd-actions" style="margin-top:12px"><button class="btn btn-primary" data-infra-act="pcConfirm" data-i="' + i + '">Confirm</button><button class="btn btn-secondary" data-infra-act="cancel">Cancel</button></div>') +
+        '<div class="pc-q-label" style="margin:14px 0 6px">2.2 Pre-consultation comments / notes (if any)</div>' +
+        ifUpload("Comments / notes", r.notesUploaded, "pcUpload", i) + "</div>";
+    }).join("");
+    h += '<button class="if-add" data-infra-act="pcAdd">＋ Add Pre-Consultation ' + (rounds.length + 1) + "</button></section>";
+
+    h += '<section class="pc-card"><h4 class="pc-card-title">Meeting &amp; Review</h4>' +
+      '<div class="pc-q-label">2.3 Consultant to upload meeting note/sketch (if meeting with PPD)</div>' + ifUpload("Meeting note / sketch", w.meetingNote, "meetingNote", 0) +
+      '<div class="pc-q-label" style="margin-top:16px">2.4 PPD to set date for Consultant to upload revised drawings for review</div>' +
+      (w.revise.confirmed
+        ? '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><input type="date" class="sd-input" style="max-width:240px" value="' + esc(w.revise.date) + '" disabled><span class="if-stamp"><span class="if-dot"></span><b>Confirmed</b> <span class="if-time">' + esc(w.revise.confirmedAt) + "</span></span></div>"
+        : '<input type="date" class="sd-input" style="max-width:240px" id="if-revdate"><div class="sd-actions" style="margin-top:12px"><button class="btn btn-primary" data-infra-act="reviseConfirm">Confirm</button><button class="btn btn-secondary" data-infra-act="cancel">Cancel</button></div>') +
+      '<div class="pc-hint">System will notify Consultant in their task list.</div>' +
+      '<div class="pc-q-label" style="margin-top:16px">2.5 Submission review — upload, PPD review &amp; comment, revise until approved</div>';
+    h += subs.map(function (s, i) {
+      const tag = s.status === "approved" ? '<span class="st-chip st-completed">Approved</span>' : s.status === "revision" ? '<span class="st-chip st-alarming">Revision requested</span>' : '<span class="st-chip st-na">In review</span>';
+      let b = '<div class="if-card ' + (s.status === "approved" ? "ok" : "") + '"><div class="if-title">' + (s.n === 1 ? "Submission" : "Revised Submission " + s.n) + " " + tag + "</div>" + ifUpload("Submission drawings / documents", s.uploaded, "subUpload", i);
+      if (s.uploaded && s.status === "in-review") b += '<div class="sd-actions" style="margin-top:10px"><button class="btn btn-primary" data-infra-act="subApprove" data-i="' + i + '">PPD approve</button><button class="btn btn-secondary" data-infra-act="subRevise" data-i="' + i + '">Request revision</button></div>';
+      if (s.status === "revision") b += '<div class="if-routing warn">↻ Revision requested. Consultant to upload a revised submission below.</div>';
+      if (s.status === "approved") b += '<div class="if-routing ok">✓ Approved by PPD — 2.6 Submitted Documents unlocked.</div>';
+      return b + "</div>";
+    }).join("") + "</section>";
+
+    h += '<section class="pc-card"><h4 class="pc-card-title">2.6 Submitted Documents</h4>' +
+      '<div class="pc-hint" style="margin-top:0">' + (approved ? "PPD approved the submission in 2.5 — upload the submitted set and acknowledgement." : "Available after PPD approves the submission in 2.5.") + "</div>" +
+      '<div style="' + (approved ? "" : "opacity:.45;pointer-events:none") + '">' + ifUpload("Submitted drawings / documents", w.submitted.docs, "submittedDocs", 0) + ifUpload("Acknowledgement (from authority)", w.submitted.ack, "submittedAck", 0) + "</div></section>";
+
+    h += '<section class="pc-card"><h4 class="pc-card-title">Clearance</h4>';
+    h += w.clearance.map(function (c, i) {
+      return '<div class="' + (i > 0 ? "if-card" : "") + '">' +
+        (i > 0 ? '<div class="if-title">Rev ' + c.rev + " " + (c.submitted ? '<span class="st-chip st-completed">Submitted</span>' : '<span class="st-chip st-na">Draft</span>') + "</div>" : "") +
+        '<div class="pc-q-label">2.7 Consultant to upload:' + (i > 0 ? " (rev " + c.rev + ")" : "") + "</div>" +
+        '<div class="pc-hint" style="margin-top:0;margin-bottom:8px">' + INFRA_LETTER_TYPES.join(", ") + "</div>" +
+        '<select class="sd-input" ' + (c.submitted ? "disabled" : "") + ' data-infra-change="clrType" data-i="' + i + '"><option value="" ' + (c.type ? "" : "selected") + ' disabled>Select letter type…</option>' + INFRA_LETTER_TYPES.map(function (t) { return "<option " + (c.type === t ? "selected" : "") + ">" + esc(t) + "</option>"; }).join("") + "</select>" +
+        '<div style="display:flex;gap:12px;align-items:center;margin:10px 0;flex-wrap:wrap">' +
+          (c.fileName ? '<span class="if-chip">📄 ' + esc(c.fileName) + "</span>" : '<button class="btn btn-secondary" ' + (c.submitted ? "disabled" : "") + ' data-infra-act="clrUpload" data-i="' + i + '">Upload letter</button>') +
+          '<input type="date" class="sd-input" style="max-width:210px" ' + (c.submitted ? "disabled" : "") + ' value="' + esc(c.date) + '" data-infra-change="clrDate" data-i="' + i + '"></div>' +
+        '<input type="text" class="sd-input" placeholder="Reference no. (e.g. EG/SMP/JAS/2026)" ' + (c.submitted ? "disabled" : "") + ' value="' + esc(c.ref) + '" data-infra-input="clrRef" data-i="' + i + '">' +
+        '<div class="pc-q-label" style="margin-top:12px">Condition &amp; Comment by Authority</div>' +
+        '<textarea class="sd-input" rows="3" placeholder="Enter condition / comment by authority…" ' + (c.submitted ? "disabled" : "") + ' data-infra-input="clrComment" data-i="' + i + '">' + esc(c.comment) + "</textarea>" +
+        (c.submitted ? ifStamp(c.submittedAt) : '<div class="sd-actions" style="margin-top:12px"><button class="btn btn-primary" data-infra-act="clrSubmit" data-i="' + i + '">Submit</button></div>') + "</div>";
+    }).join("") + "</section>";
+
+    return h + infraAppealHtml(w);
+  }
+  function infraAppealHtml(w) {
+    const A = w.appeal, a = A.list[A.active];
+    const isAppeal = a.cls === "Appeal";
+    const meetingNeeded = a.ii.req === "Meeting required";
+    const nextRev = w.clearance.length;
+    let h = '<section class="pc-card"><h4 class="pc-card-title">Classification &amp; Appeal (PPD Internal Usage Only)</h4>';
+    h += '<div class="if-wtabs">' + A.list.map(function (x, i) { return '<button class="if-wtab ' + (i === A.active ? "on" : "") + '" data-infra-act="apTab" data-i="' + i + '">Appeal ' + x.n + "</button>"; }).join("") + '<button class="if-wtab" data-infra-act="apAdd">＋ Appeal</button></div>';
+    h += '<div class="pc-q-label">2.8 Appeal / Compliance classification</div>' +
+      '<div class="if-2col"><select class="sd-input" data-infra-change="apCls"><option value="" ' + (a.cls ? "" : "selected") + ' disabled>Select classification…</option>' + INFRA_CLS_TYPES.map(function (t) { return "<option " + (a.cls === t ? "selected" : "") + ">" + esc(t) + "</option>"; }).join("") + "</select>" +
+      '<select class="sd-input" data-infra-change="apImpact"><option value="" ' + (a.impact ? "" : "selected") + ' disabled>Select impact…</option>' + INFRA_IMPACT_TYPES.map(function (t) { return "<option " + (a.impact === t ? "selected" : "") + ">" + esc(t) + "</option>"; }).join("") + "</select></div>";
+    if (!isAppeal) {
+      h += '<div class="pc-hint" style="margin-top:12px">' + (a.cls === "Compliance" ? "Classified as Compliance — consultant to comply and upload the revised outcome as 2.7 rev " + nextRev + "." : "Select “Appeal” to open the internal appeal workflow below.") + "</div>";
+    } else {
+      h += '<div class="pc-q-label" style="margin-top:16px">If to appeal (with time/cost impact to AP/launch date):</div><div class="if-caps">Internal PPD use only</div>';
+      h += '<div class="if-roman">i. HOD-PPD to upload the proposed adjusted AP/Launch timeline and action plan:</div>' +
+        '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">' + (a.i.file ? '<span class="if-chip">📄 ' + esc(a.i.file) + "</span>" : '<button class="btn btn-secondary" data-infra-act="apUploadI">Upload timeline &amp; action plan</button>') +
+        '<input type="date" class="sd-input" style="max-width:210px" ' + (a.i.submitted ? "disabled" : "") + ' value="' + esc(a.i.date) + '" data-infra-change="apIdate"></div>' +
+        (a.i.submitted ? ifStamp(a.i.at) : '<div class="sd-actions" style="margin-top:12px"><button class="btn btn-primary" data-infra-act="apSubmitI">Submit</button></div>');
+      h += '<div class="if-roman">ii. HOD-PPD to select if required for a meeting with CDO:</div>' +
+        '<div class="if-2col"><select class="sd-input" ' + (a.ii.submitted ? "disabled" : "") + ' data-infra-change="apReq"><option value="" ' + (a.ii.req ? "" : "selected") + ' disabled>Select…</option>' + INFRA_MEET_TYPES.map(function (t) { return "<option " + (a.ii.req === t ? "selected" : "") + ">" + esc(t) + "</option>"; }).join("") + "</select>" +
+        '<input type="date" class="sd-input" ' + (a.ii.submitted ? "disabled" : "") + ' value="' + esc(a.ii.date) + '" data-infra-change="apIIdate"></div>' +
+        (a.ii.submitted ? ifStamp(a.ii.at) : '<div class="sd-actions" style="margin-top:12px"><button class="btn btn-primary" data-infra-act="apSubmitII">Submit</button></div>');
+      h += '<div class="pc-hint" style="margin-top:10px">(iii — intentionally skipped, mirroring the source document. TODO: reserved.)</div>';
+      h += '<div class="if-card" style="margin-top:16px"><div class="if-roman" style="margin-top:0">iv. PPD-HOD to update meeting outcome:</div>' +
+        (a.iv.doc ? '<span class="if-chip">📄 ' + esc(a.iv.doc) + "</span>" : '<button class="if-add" style="max-width:420px" data-infra-act="apUploadIV">⤒ Upload Document</button>') +
+        '<div class="sd-actions" style="margin-top:14px;flex-wrap:wrap"><button class="btn btn-primary" data-infra-act="apOutcome" data-v="approved">Approve by CDO</button><button class="btn btn-secondary" data-infra-act="apOutcome" data-v="revise">To revise (with remarks)</button><button class="btn btn-secondary" style="color:#b4232a;border-color:#e5a7aa" data-infra-act="apOutcome" data-v="reject">Reject (to comply)</button></div>' +
+        '<div class="pc-q-label" style="margin-top:14px">CDO Comments</div><textarea class="sd-input" rows="3" placeholder="Enter comments here…" data-infra-input="apComments">' + esc(a.iv.comments) + "</textarea>" +
+        (a.iv.outcome === "approved" ? '<div class="if-routing ok">✓ Approved by CDO — proceed to 2.9 and upload the outcome as 2.7 rev ' + nextRev + ".</div>" : "") +
+        (a.iv.outcome === "revise" ? '<div class="if-routing warn">↻ To revise — step i has reopened above; update the timeline / action plan with CDO remarks and resubmit.</div>' : "") +
+        (a.iv.outcome === "reject" ? '<div class="if-routing warn">↻ Appeal rejected — to comply. Consultant to comply and upload the outcome as 2.7 rev ' + nextRev + ".</div>" : "") + "</div>";
+      if (a.ii.submitted && !meetingNeeded) h += '<div class="pc-hint" style="margin-top:12px">No meeting required — record the outcome above, then proceed to 2.9 (upload as 2.7 rev ' + nextRev + ").</div>";
+    }
+    return h + "</section>";
+  }
+  function infraRenderPanel() {
     const panelEl = masterBody.querySelector("[data-infra-panel]");
     if (!panelEl) return;
-    // JAS panels come in the next phase; placeholder for now.
+    if (!infraPanelNode) { panelEl.innerHTML = ""; return; }
+    const n = infraNode(infraPanelNode);
+    if (!n) { panelEl.innerHTML = ""; return; }
+    let title, body;
+    if (n.panel === "jas-eia") { title = "EIA — Approved Report"; body = eiaHtml(n.work); }
+    else if (n.panel === "jas-emp") { title = "EMP — Pre-Consultation to Classification & Appeal (2.1 – 2.8)"; body = empHtml(n.work); }
+    else { title = n.label; body = '<p class="sd-note">Working page for this step is coming next.</p>'; }
     panelEl.innerHTML = '<section class="pc-card" style="border-color:var(--brand-green);margin-top:14px">' +
-      '<div class="pc-head-card"><div class="pc-authority">' + esc(n.label) + " — " + esc(f.tab) + "</div>" +
+      '<div class="pc-head-card"><div class="pc-authority">' + esc(title) + "</div>" +
       '<button type="button" class="btn btn-secondary" style="padding:6px 14px;font-size:12px" data-infra-panel-close>✕</button></div>' +
-      '<p class="sd-note" style="margin-top:12px">Working page for this step is coming next.</p></section>';
-    panelEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      '<div style="margin-top:14px">' + body + "</div></section>";
+    infraSave();
+  }
+  function infraNodeClick(nodeId) {
+    const n = infraNode(nodeId);
+    if (!n) return;
+    infraEnsureWork(n);
+    infraPanelNode = nodeId;
+    infraRenderPanel();
+    const p = masterBody.querySelector("[data-infra-panel]");
+    if (p) p.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  function handleInfraAct(el) {
+    const n = infraNode(infraPanelNode); if (!n || !n.work) return;
+    const w = n.work, act = el.getAttribute("data-infra-act"), i = +el.getAttribute("data-i");
+    const A = w.appeal, a = A && A.list[A.active];
+    if (act === "cancel") { infraRenderPanel(); return; }
+    if (act === "pcConfirm") { const v = (document.getElementById("if-pcdate" + i) || {}).value; if (!v) { alert("Pick a date first"); return; } w.rounds[i].date = v; w.rounds[i].confirmed = true; w.rounds[i].confirmedAt = infraNow(); }
+    else if (act === "pcUpload") { w.rounds[i].notesUploaded = true; }
+    else if (act === "pcAdd") { w.rounds.push({ n: w.rounds.length + 1, date: "", confirmed: false, confirmedAt: "", notesUploaded: false }); }
+    else if (act === "meetingNote") { w.meetingNote = true; }
+    else if (act === "reviseConfirm") { const v = (document.getElementById("if-revdate") || {}).value; if (!v) { alert("Pick a date first"); return; } w.revise = { date: v, confirmed: true, confirmedAt: infraNow() }; }
+    else if (act === "subUpload") { w.submissions[i].uploaded = true; }
+    else if (act === "subApprove") { w.submissions[i].status = "approved"; }
+    else if (act === "subRevise") { w.submissions[i].status = "revision"; if (i === w.submissions.length - 1) w.submissions.push({ n: w.submissions.length + 1, uploaded: false, status: "in-review" }); }
+    else if (act === "submittedDocs") { w.submitted.docs = true; }
+    else if (act === "submittedAck") { w.submitted.ack = true; }
+    else if (act === "clrUpload") { const c = w.clearance[i]; c.fileName = (c.type || "Letter").split("/")[0].trim().replace(/\s+/g, "_") + ".pdf"; }
+    else if (act === "clrSubmit") { const c = w.clearance[i]; if (!c.type) { alert("Select the letter type first"); return; } if (!c.fileName) { alert("Upload the letter first"); return; } c.submitted = true; c.submittedAt = infraNow(); }
+    else if (act === "apTab") { A.active = i; }
+    else if (act === "apAdd") { A.list.push(infraAppealBlank(A.list.length + 1)); A.active = A.list.length - 1; }
+    else if (act === "apUploadI") { a.i.file = "Appeal_timeline.pdf"; }
+    else if (act === "apSubmitI") { if (!a.i.file) { alert("Upload the timeline & action plan first"); return; } a.i.submitted = true; a.i.at = infraNow(); }
+    else if (act === "apSubmitII") { if (!a.ii.req) { alert("Select whether a meeting is required"); return; } a.ii.submitted = true; a.ii.at = infraNow(); }
+    else if (act === "apUploadIV") { a.iv.doc = "Meeting_outcome.pdf"; }
+    else if (act === "apOutcome") { const v = el.getAttribute("data-v"); a.iv.outcome = v; if (v === "revise") { a.i.submitted = false; a.i.at = ""; } }
+    else return;
+    infraRenderPanel();
+  }
+  function handleInfraChange(el) {
+    const n = infraNode(infraPanelNode); if (!n || !n.work) return;
+    const w = n.work, act = el.getAttribute("data-infra-change"), i = +el.getAttribute("data-i"), v = el.value;
+    const a = w.appeal && w.appeal.list[w.appeal.active];
+    if (act === "clrType") w.clearance[i].type = v;
+    else if (act === "clrDate") w.clearance[i].date = v;
+    else if (act === "apCls") a.cls = v;
+    else if (act === "apImpact") a.impact = v;
+    else if (act === "apIdate") a.i.date = v;
+    else if (act === "apReq") a.ii.req = v;
+    else if (act === "apIIdate") a.ii.date = v;
+    else return;
+    infraRenderPanel();
+  }
+  function handleInfraInput(el) {
+    const n = infraNode(infraPanelNode); if (!n || !n.work) return;
+    const w = n.work, act = el.getAttribute("data-infra-input"), i = +el.getAttribute("data-i");
+    if (act === "clrRef") w.clearance[i].ref = el.value;
+    else if (act === "clrComment") w.clearance[i].comment = el.value;
+    else if (act === "apComments") w.appeal.list[w.appeal.active].iv.comments = el.value;
+    infraSave();
   }
   if (masterBody) {
     masterBody.addEventListener("click", function (e) {
       const tab = e.target.closest("[data-infra-tab]");
-      if (tab) { INFRA.current = tab.getAttribute("data-infra-tab"); const p = masterBody.querySelector("[data-infra-panel]"); if (p) p.innerHTML = ""; renderInfra(masterBody); return; }
+      if (tab) { INFRA.current = tab.getAttribute("data-infra-tab"); infraPanelNode = null; const p = masterBody.querySelector("[data-infra-panel]"); if (p) p.innerHTML = ""; renderInfra(masterBody); return; }
       if (e.target.closest("[data-infra-manage-toggle]")) { infraManaging = !infraManaging; renderInfra(masterBody); return; }
       const rm = e.target.closest("[data-infra-remove]");
-      if (rm) { const id = rm.getAttribute("data-infra-remove"); INFRA.flows = INFRA.flows.filter(function (x) { return x.id !== id; }); if (INFRA.current === id) INFRA.current = INFRA.flows.length ? INFRA.flows[0].id : null; renderInfra(masterBody); return; }
+      if (rm) { const id = rm.getAttribute("data-infra-remove"); INFRA.flows = INFRA.flows.filter(function (x) { return x.id !== id; }); if (INFRA.current === id) { INFRA.current = INFRA.flows.length ? INFRA.flows[0].id : null; infraPanelNode = null; } renderInfra(masterBody); return; }
       if (e.target.closest("[data-infra-add]")) {
         const inp = document.getElementById("infra-new-agency"); const name = inp && inp.value.trim();
         if (!name) { alert("Enter an agency name."); return; }
         INFRA.flows.push({ id: "ag" + INFRA.flows.length + "-" + name.toLowerCase().replace(/[^a-z0-9]/g, ""), tab: name, title: name, desc: "", nodes: [], edges: [] });
         INFRA.current = INFRA.flows[INFRA.flows.length - 1].id; renderInfra(masterBody); return;
       }
-      if (e.target.closest("[data-infra-panel-close]")) { const p = masterBody.querySelector("[data-infra-panel]"); if (p) p.innerHTML = ""; return; }
+      if (e.target.closest("[data-infra-panel-close]")) { infraPanelNode = null; const p = masterBody.querySelector("[data-infra-panel]"); if (p) p.innerHTML = ""; return; }
+      const act = e.target.closest("[data-infra-act]");
+      if (act) { handleInfraAct(act); return; }
       const node = e.target.closest("[data-infra-node]");
       if (node) { infraNodeClick(node.getAttribute("data-infra-node")); return; }
+    });
+    masterBody.addEventListener("change", function (e) {
+      const el = e.target.closest("[data-infra-change]");
+      if (el) handleInfraChange(el);
+    });
+    masterBody.addEventListener("input", function (e) {
+      const el = e.target.closest("[data-infra-input]");
+      if (el) handleInfraInput(el);
     });
   }
 
