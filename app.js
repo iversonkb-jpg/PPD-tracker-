@@ -1462,15 +1462,16 @@
 
   function drawInfraFlow(f) {
     if (!f.nodes.length) return '<div class="pc-hint" style="padding:50px 16px;text-align:center">Flow for ' + esc(f.title) + " not defined yet.</div>";
-    // Proportions matched to the MKM / KM-BP dashboard flow.
-    const COLW = 132, LANEH = 108, R = 22, PADX = 60;
+    // Proportions matched to the MKM / KM-BP dashboard flow. Vertical spacing
+    // kept tight so multi-lane flows (e.g. Majlis) don't run down the screen.
+    const COLW = 132, LANEH = 84, R = 22, PADX = 60;
     const lanes = f.nodes.map(function (n) { return n.lane; });
     const minL = Math.min.apply(null, lanes), maxL = Math.max.apply(null, lanes);
     const cols = Math.max.apply(null, f.nodes.map(function (n) { return n.col; }));
-    const topPad = (minL < 0 ? 78 : 54), botPad = (maxL > 0 ? 78 : 54);
-    const H = (maxL - minL) * LANEH + topPad + botPad + 40;
+    const topPad = (minL < 0 ? 58 : 30);      // room for above-lane labels
+    const H = topPad + (maxL - minL) * LANEH + 66;   // 66 = radius + date lines below
     const W = PADX * 2 + cols * COLW;
-    const cy = function (l) { return topPad + (l - minL) * LANEH + 22; };
+    const cy = function (l) { return topPad + (l - minL) * LANEH; };
     const cx = function (c) { return PADX + c * COLW; };
     const byId = {}; f.nodes.forEach(function (n) { byId[n.id] = n; });
     let svg = '<svg viewBox="0 0 ' + W + " " + H + '" width="' + W + '" height="' + H + '" font-family="var(--font-sans)" style="max-width:none">' +
