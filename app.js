@@ -1462,29 +1462,30 @@
 
   function drawInfraFlow(f) {
     if (!f.nodes.length) return '<div class="pc-hint" style="padding:50px 16px;text-align:center">Flow for ' + esc(f.title) + " not defined yet.</div>";
-    const COLW = 185, LANEH = 132, R = 28, PADX = 80;
+    // Proportions matched to the MKM / KM-BP dashboard flow.
+    const COLW = 132, LANEH = 108, R = 22, PADX = 60;
     const lanes = f.nodes.map(function (n) { return n.lane; });
     const minL = Math.min.apply(null, lanes), maxL = Math.max.apply(null, lanes);
     const cols = Math.max.apply(null, f.nodes.map(function (n) { return n.col; }));
-    const topPad = (minL < 0 ? 96 : 66), botPad = (maxL > 0 ? 96 : 66);
-    const H = (maxL - minL) * LANEH + topPad + botPad + 50;
+    const topPad = (minL < 0 ? 78 : 54), botPad = (maxL > 0 ? 78 : 54);
+    const H = (maxL - minL) * LANEH + topPad + botPad + 40;
     const W = PADX * 2 + cols * COLW;
-    const cy = function (l) { return topPad + (l - minL) * LANEH + 28; };
+    const cy = function (l) { return topPad + (l - minL) * LANEH + 22; };
     const cx = function (c) { return PADX + c * COLW; };
     const byId = {}; f.nodes.forEach(function (n) { byId[n.id] = n; });
     let svg = '<svg viewBox="0 0 ' + W + " " + H + '" width="' + W + '" height="' + H + '" font-family="var(--font-sans)" style="max-width:none">' +
-      '<defs><marker id="infarr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#9aa39b"/></marker></defs>';
+      '<defs><marker id="infarr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#9aa39b"/></marker></defs>';
     f.edges.forEach(function (e) {
       const a = byId[e.from], b = byId[e.to];
       const ax = cx(a.col) + R, ay = cy(a.lane), bx = cx(b.col) - R - 4, by = cy(b.lane);
       let path, px, py;
-      if (a.lane === b.lane) { path = "M " + ax + " " + ay + " L " + bx + " " + by; px = (ax + bx) / 2; py = ay - 20; }
-      else { const jx = ax + (cx(b.col) - R - ax) * 0.42; path = "M " + ax + " " + ay + " L " + jx + " " + ay + " L " + jx + " " + by + " L " + bx + " " + by; px = (jx + bx) / 2; py = by - 20; }
-      svg += '<path d="' + path + '" fill="none" stroke="#9aa39b" stroke-width="2.5" marker-end="url(#infarr)"/>';
+      if (a.lane === b.lane) { path = "M " + ax + " " + ay + " L " + bx + " " + by; px = (ax + bx) / 2; py = ay - 18; }
+      else { const jx = ax + (cx(b.col) - R - ax) * 0.42; path = "M " + ax + " " + ay + " L " + jx + " " + ay + " L " + jx + " " + by + " L " + bx + " " + by; px = (jx + bx) / 2; py = by - 18; }
+      svg += '<path d="' + path + '" fill="none" stroke="#9aa39b" stroke-width="2" marker-end="url(#infarr)"/>';
       if (e.days) {
-        const tw = e.days.length * 6.4 + 20;
-        svg += '<rect x="' + (px - tw / 2) + '" y="' + (py - 11) + '" width="' + tw + '" height="20" rx="10" fill="#fff" stroke="#c3cac5"/>' +
-          '<text x="' + px + '" y="' + (py + 3) + '" text-anchor="middle" font-size="11" fill="var(--muted)" font-weight="600">' + esc(e.days) + "</text>";
+        const tw = e.days.length * 5.2 + 14;
+        svg += '<rect x="' + (px - tw / 2) + '" y="' + (py - 9) + '" width="' + tw + '" height="16" rx="8" fill="#fff" stroke="#c3cac5"/>' +
+          '<text x="' + px + '" y="' + (py + 2.5) + '" text-anchor="middle" font-size="9" fill="var(--muted)" font-weight="600">' + esc(e.days) + "</text>";
       }
     });
     f.nodes.forEach(function (n) {
@@ -1492,20 +1493,20 @@
       const above = n.lane < 0;
       svg += '<g class="dash-svg-node" data-infra-node="' + esc(n.id) + '">' +
         '<circle cx="' + x + '" cy="' + y + '" r="' + R + '" fill="' + c.fill + '" stroke="' + c.stroke + '" stroke-width="2"/>' +
-        '<text x="' + x + '" y="' + (y + 6) + '" text-anchor="middle" font-size="18" font-weight="700" fill="' + c.text + '">' + n.n + "</text>";
+        '<text x="' + x + '" y="' + y + '" dy=".34em" text-anchor="middle" font-size="15" font-weight="700" fill="' + c.text + '">' + n.n + "</text>";
       const l1 = "TS " + n.ts + " · AS " + n.as, l2 = "TE " + n.te + " · AE " + n.ae;
-      const ly = above ? [y - R - 44, y - R - 28, y - R - 15] : [y + R + 20, y + R + 36, y + R + 50];
-      svg += '<text x="' + x + '" y="' + ly[0] + '" text-anchor="middle" font-size="13" font-weight="600" fill="var(--ink)">' + esc(n.label) + "</text>" +
-        '<text x="' + x + '" y="' + ly[1] + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + esc(l1) + "</text>" +
-        '<text x="' + x + '" y="' + ly[2] + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + esc(l2) + "</text></g>";
+      const ly = above ? [y - R - 30, y - R - 18, y - R - 6] : [y + R + 16, y + R + 28, y + R + 39];
+      svg += '<text x="' + x + '" y="' + ly[0] + '" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--ink)">' + esc(n.label) + "</text>" +
+        '<text x="' + x + '" y="' + ly[1] + '" text-anchor="middle" font-size="8.5" fill="var(--muted)">' + esc(l1) + "</text>" +
+        '<text x="' + x + '" y="' + ly[2] + '" text-anchor="middle" font-size="8.5" fill="var(--muted)">' + esc(l2) + "</text></g>";
     });
     return svg + "</svg>";
   }
   function infraLegendHtml() {
     function li(dot, t) { return '<span class="legend-item"><span class="legend-dot ' + dot + '"></span>' + t + "</span>"; }
     return '<div class="dash-legend" style="display:flex;gap:16px;flex-wrap:wrap">' +
-      li("ld-completed", "Done") + li("ld-in-progress", "In progress") + li("ld-delayed", "Late / query") + li("ld-na", "Upcoming") +
-      '<span class="dash-key">TS/TE = target start/end · AS/AE = actual</span></div>';
+      li("ld-completed", "Completed") + li("ld-in-progress", "In Progress") + li("ld-delayed", "Late") + li("ld-na", "Upcoming") +
+      '<span class="dash-key">TS = Target Start · AS = Actual Start · TE = Target End · AE = Actual End</span></div>';
   }
   function renderInfra(container) {
     if (!INFRA) infraLoad();
@@ -1677,7 +1678,7 @@
     if (!n) { panelEl.innerHTML = ""; return; }
     let title, body;
     if (n.panel === "jas-eia") { title = "EIA — Approved Report"; body = eiaHtml(n.work); }
-    else if (n.panel === "jas-emp") { title = "EMP — Pre-Consultation to Classification & Appeal (2.1 – 2.8)"; body = empHtml(n.work); }
+    else if (n.panel === "jas-emp") { title = "EMP — Environmental Management Plan"; body = empHtml(n.work); }
     else { title = n.label; body = '<p class="sd-note">Working page for this step is coming next.</p>'; }
     panelEl.innerHTML = '<section class="pc-card" style="border-color:var(--brand-green);margin-top:14px">' +
       '<div class="pc-head-card"><div class="pc-authority">' + esc(title) + "</div>" +
