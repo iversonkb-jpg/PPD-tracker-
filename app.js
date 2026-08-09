@@ -1428,7 +1428,7 @@
         { from: "p2", to: "p6", days: "no STP" }, { from: "p6", to: "p7" }, { from: "p7", to: "p8" }] },
     { id: "ais", tab: "AIS", title: "AIS — Water Reticulation", desc: "Concept (MKM) and detail reticulation, then QT 1–11 in sequence.", defaultPanel: "workflow",
       nodes: [
-        { n: 1, id: "c", label: "Concept (MKM)", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 1, id: "c", label: "Concept (MKM)", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "link", heading: "Approved Concept Plan (MKM)", linkLabel: "Link to approved concept plan (auto-linked from MKM)" },
         { n: 2, id: "dr", label: "Detail Reticulation", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 3, id: "q1", label: "QT 1", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 4, id: "q2", label: "QT 2", col: 3, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
