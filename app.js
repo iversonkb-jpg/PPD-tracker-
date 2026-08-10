@@ -1411,19 +1411,19 @@
         { n: 6, id: "r5", label: "RSA 5", col: 5, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
       ], edges: [{ from: "r1", to: "r3" }, { from: "r3", to: "s1" }, { from: "s1", to: "s2" }, { from: "s2", to: "s3" }, { from: "s3", to: "r5" }] },
     { id: "iwk", tab: "IWK", title: "IWK — Sewerage (PDC)", defaultPanel: "workflow",
-      desc: "PDC 1–2, then two routes: with an STP, go through HAZOP and PDC 3–5 before PDC 6; with no STP, skip straight from PDC 2 to PDC 6. Both routes finish PDC 6 → 7 → 8.",
+      desc: "PDC 1, then PDC 2 and HAZOP/PDC 2 run concurrently. With an STP, go through HAZOP/PDC 2 and PDC 3–5 before PDC 6; with no STP, skip straight from PDC 2 to PDC 6. Both routes finish PDC 6 → 7 → 8.",
       nodes: [
         { n: 1, id: "p1", label: "PDC 1", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 2, id: "p2", label: "PDC 2", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 3, id: "hz", label: "HAZOP", col: 2, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 4, id: "p3", label: "PDC 3", col: 3, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 5, id: "p4", label: "PDC 4", col: 4, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 6, id: "p5", label: "PDC 5", col: 5, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 7, id: "p6", label: "PDC 6", col: 6, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 8, id: "p7", label: "PDC 7", col: 7, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 9, id: "p8", label: "PDC 8", col: 8, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+        { n: 3, id: "hz", label: "HAZOP/PDC 2", col: 1, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 4, id: "p3", label: "PDC 3", col: 2, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 5, id: "p4", label: "PDC 4", col: 3, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 6, id: "p5", label: "PDC 5", col: 4, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 7, id: "p6", label: "PDC 6", col: 5, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 8, id: "p7", label: "PDC 7", col: 6, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 9, id: "p8", label: "PDC 8", col: 7, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
       ], edges: [
-        { from: "p1", to: "p2" }, { from: "p2", to: "hz", days: "with STP" },
+        { from: "p1", to: "p2" }, { from: "p1", to: "hz", days: "with STP" },
         { from: "hz", to: "p3" }, { from: "p3", to: "p4" }, { from: "p4", to: "p5" }, { from: "p5", to: "p6" },
         { from: "p2", to: "p6", days: "no STP" }, { from: "p6", to: "p7" }, { from: "p7", to: "p8" }] },
     { id: "ais", tab: "AIS", title: "AIS — Water Reticulation", desc: "Concept (MKM) and detail reticulation, then QT 1–11 in sequence.", defaultPanel: "workflow",
@@ -1450,14 +1450,18 @@
         { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 2, id: "da", label: "Detail Approval", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
       ], edges: [{ from: "km", to: "da" }] },
-    { id: "tnb", tab: "TNB", title: "TNB — Electricity Supply", desc: "KM approval, supply application, PIAT, CSP, then energisation.",
+    { id: "tnb", tab: "TNB", title: "TNB — Electricity Supply", desc: "KM approval, supply application, PIAT, CSP, kickoff meeting, construction, final PIAT, energisation, then meter application.",
       nodes: [
         { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 2, id: "sa", label: "Supply Application", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 3, id: "piat", label: "PIAT", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 4, id: "csp", label: "CSP", col: 3, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 5, id: "en", label: "Energisation", col: 4, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
-      ], edges: [{ from: "km", to: "sa" }, { from: "sa", to: "piat" }, { from: "piat", to: "csp" }, { from: "csp", to: "en" }] },
+        { n: 5, id: "ko", label: "Kickoff Meeting", col: 4, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 6, id: "con", label: "Construction", col: 5, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 7, id: "fpiat", label: "Final PIAT", col: 6, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 8, id: "en", label: "Energisation", col: 7, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 9, id: "ma", label: "Meter Application", col: 8, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+      ], edges: [{ from: "km", to: "sa" }, { from: "sa", to: "piat" }, { from: "piat", to: "csp" }, { from: "csp", to: "ko" }, { from: "ko", to: "con" }, { from: "con", to: "fpiat" }, { from: "fpiat", to: "en" }, { from: "en", to: "ma" }] },
     { id: "jps", tab: "JPS", title: "JPS — Drainage & Irrigation", desc: "KM approval, then detail approval.",
       nodes: [
         { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
