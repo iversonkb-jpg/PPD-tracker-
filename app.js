@@ -1559,7 +1559,8 @@
 
     let h = '<section class="pc-card"><div class="pc-head-card"><h4 class="pc-card-title" style="margin:0">Master Plan</h4><div style="display:flex;gap:8px;flex-wrap:wrap">';
     if (mp.img) {
-      h += '<button type="button" class="btn ' + (drawing ? "btn-primary" : "btn-secondary") + '" style="padding:6px 12px;font-size:12px" data-infra-mp="demarcate">' + (drawing ? "Cancel" : "＋ Demarcate zone") + "</button>" +
+      h += '<button type="button" class="btn btn-secondary" style="padding:6px 12px;font-size:12px" data-infra-mp="overall">＋ Overall</button>' +
+        '<button type="button" class="btn ' + (drawing ? "btn-primary" : "btn-secondary") + '" style="padding:6px 12px;font-size:12px" data-infra-mp="demarcate">' + (drawing ? "Cancel" : "＋ Demarcate zone") + "</button>" +
         '<label class="btn btn-secondary" style="padding:6px 12px;font-size:12px;cursor:pointer">Change plan<input type="file" accept="image/*" data-infra-mp-file style="display:none"></label>';
     }
     h += "</div></div>";
@@ -1569,13 +1570,11 @@
     }
     h += '<div class="pc-hint" style="margin-top:0;margin-bottom:8px">' +
       (drawing ? "Click on the plan to outline a zone (add ≥3 points), then Finish."
-               : (mp.zones.length ? "Click a zone to load its progress flow below." : "Demarcate a zone to start its own progress flow.")) + "</div>";
-    if (mp.zones.length && !drawing) {
-      h += '<div class="agency-grid" style="margin-bottom:10px">' + mp.zones.map(function (z) {
-        return '<span class="agency-chip ' + (z.id === mp.current ? "selected" : "") + '" data-infra-zone-chip="' + esc(z.id) + '" style="cursor:pointer">' + esc(z.name) +
-          ' <button type="button" data-infra-zone-del="' + esc(z.id) + '" title="Delete zone" style="border:none;background:none;color:#b4232a;cursor:pointer;font-weight:800;padding:0 2px;font-size:13px">×</button></span>';
-      }).join("") + "</div>";
-    }
+               : (mp.zones.length ? "Pick a zone from the list to open its progress flow, or add “Overall” for a whole-site flow."
+                                  : "Add “Overall” for a whole-site flow, or Demarcate a zone to outline one on the plan.")) + "</div>";
+
+    // Two columns: the plan (left) and the zone list (right).
+    h += '<div class="mp-layout"><div class="mp-left">';
     h += '<div class="mp-wrap"><img class="mp-img" src="' + mp.img + '" data-infra-mp-img data-mp-mode="' + (drawing ? "demarcate" : "view") + '" alt="Master plan">';
     h += '<svg class="mp-overlay' + (drawing ? " mp-draw" : "") + '" viewBox="0 0 100 100" preserveAspectRatio="none">';
     mp.zones.forEach(function (z) {
@@ -1593,11 +1592,34 @@
       const cy = z.points.reduce(function (s, p) { return s + p[1]; }, 0) / z.points.length;
       h += '<span class="mp-zlabel' + (z.id === mp.current ? " sel" : "") + '" data-infra-zone-chip="' + esc(z.id) + '" style="left:' + cx + "%;top:" + cy + '%">' + esc(z.name) + "</span>";
     });
-    h += "</div>";
+    h += "</div>";   // /mp-wrap
     if (drawing) {
       h += '<div class="sd-actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-infra-mp="finish"' + (infraDraft.length < 3 ? ' disabled style="opacity:.5;cursor:not-allowed"' : "") + ">Finish zone</button>" +
         '<button type="button" class="btn btn-secondary" data-infra-mp="undo"' + (infraDraft.length ? "" : ' disabled style="opacity:.5"') + ">Undo point</button></div>";
     }
+    h += "</div>";   // /mp-left
+
+    // Right column: the list of zones created, each with rename + remark.
+    h += '<aside class="mp-sidelist"><div class="mp-side-title">Zones</div>';
+    if (!mp.zones.length) {
+      h += '<div class="pc-hint" style="margin:0">No zones yet. Click “＋ Overall” or “＋ Demarcate zone” to add one.</div>';
+    } else {
+      h += mp.zones.map(function (z) {
+        const sel = z.id === mp.current;
+        const isOverall = !z.points || z.points.length < 3;
+        return '<div class="mp-zrow' + (sel ? " sel" : "") + '">' +
+          '<div class="mp-zrow-head">' +
+            '<input class="mp-zname" data-infra-zone-name="' + esc(z.id) + '" value="' + esc(z.name) + '" placeholder="Zone name" aria-label="Zone name">' +
+            '<button type="button" class="mp-zdel" data-infra-zone-del="' + esc(z.id) + '" title="Delete zone" aria-label="Delete zone">×</button>' +
+          '</div>' +
+          (isOverall ? '<span class="mp-ztag">whole site</span>' : "") +
+          '<input class="mp-zremark" data-infra-zone-remark="' + esc(z.id) + '" value="' + esc(z.remark || "") + '" placeholder="Add remark…" aria-label="Zone remark">' +
+          '<button type="button" class="mp-zopen' + (sel ? " is-open" : "") + '" data-infra-zone-chip="' + esc(z.id) + '">' + (sel ? "✓ Showing progress flow below" : "Open progress flow →") + '</button>' +
+          "</div>";
+      }).join("");
+    }
+    h += "</aside></div>";   // /mp-sidelist /mp-layout
+
     el.innerHTML = h + "</section>";
   }
 
@@ -1929,6 +1951,19 @@
       if (mpBtn) {
         const act = mpBtn.getAttribute("data-infra-mp"), f = infraCurFlow();
         if (act === "demarcate") { infraMpMode = infraMpMode === "demarcate" ? null : "demarcate"; infraDraft = []; renderMasterplan(f, masterBody); }
+        else if (act === "overall") {
+          if (!f.masterplan.zones) f.masterplan.zones = [];
+          const existing = f.masterplan.zones.find(function (z) { return (z.name || "").trim().toLowerCase() === "overall"; });
+          if (existing) { f.masterplan.current = existing.id; }
+          else {
+            const id = "z" + f.masterplan.zones.length + "-" + Date.now().toString(36);
+            f.masterplan.zones.push({ id: id, name: "Overall", points: [], nodes: {} });
+            f.masterplan.current = id;
+          }
+          infraMpMode = null; infraDraft = []; infraPanelNode = null;
+          const p = masterBody.querySelector("[data-infra-panel]"); if (p) p.innerHTML = "";
+          infraSave(); renderInfra(masterBody);
+        }
         else if (act === "undo") { infraDraft.pop(); renderMasterplan(f, masterBody); }
         else if (act === "finish") {
           if (infraDraft.length < 3) return;
@@ -1997,6 +2032,17 @@
       if (el) handleInfraChange(el);
     });
     masterBody.addEventListener("input", function (e) {
+      const zf = e.target.closest("[data-infra-zone-name], [data-infra-zone-remark]");
+      if (zf) {
+        const f = infraCurFlow(); if (!f || !f.masterplan) return;
+        const id = zf.getAttribute("data-infra-zone-name") || zf.getAttribute("data-infra-zone-remark");
+        const z = (f.masterplan.zones || []).find(function (x) { return x.id === id; });
+        if (z) {
+          if (zf.hasAttribute("data-infra-zone-name")) z.name = zf.value; else z.remark = zf.value;
+          infraSave();   // no re-render — keep the caret in the field being typed
+        }
+        return;
+      }
       const el = e.target.closest("[data-infra-input]");
       if (el) handleInfraInput(el);
     });
