@@ -1445,11 +1445,13 @@
         { from: "c", to: "dr" }, { from: "dr", to: "q1" }, { from: "q1", to: "q2" }, { from: "q2", to: "q3" },
         { from: "q3", to: "q4" }, { from: "q4", to: "q5" }, { from: "q5", to: "q6" }, { from: "q6", to: "q7" },
         { from: "q7", to: "q8" }, { from: "q8", to: "q9" }, { from: "q9", to: "q10" }, { from: "q10", to: "q11" }] },
-    { id: "telco", tab: "Telco", title: "Telco — Telecommunications", desc: "KM approval, then detail approval.",
+    { id: "telco", tab: "Telco", title: "Telco — Telecommunications", desc: "KM approval, detail approval, construction, then issuance of the support letter.",
       nodes: [
         { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 2, id: "da", label: "Detail Approval", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
-      ], edges: [{ from: "km", to: "da" }] },
+        { n: 2, id: "da", label: "Detail Approval", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 3, id: "con", label: "Construction", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 4, id: "isl", label: "Issuance Support Letter", col: 3, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+      ], edges: [{ from: "km", to: "da" }, { from: "da", to: "con" }, { from: "con", to: "isl" }] },
     { id: "tnb", tab: "TNB", title: "TNB — Electricity Supply", desc: "KM approval, supply application, PIAT, CSP, kickoff meeting, construction, final PIAT, energisation, then meter application.",
       nodes: [
         { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
