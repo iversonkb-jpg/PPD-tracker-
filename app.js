@@ -1426,19 +1426,19 @@
         { n: 6, id: "r5", label: "RSA 5", col: 5, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
       ], edges: [{ from: "r1", to: "r3" }, { from: "r3", to: "s1" }, { from: "s1", to: "s2" }, { from: "s2", to: "s3" }, { from: "s3", to: "r5" }] },
     { id: "iwk", tab: "IWK", title: "IWK — Sewerage (PDC)", defaultPanel: "workflow",
-      desc: "PDC 1–2, then two routes: with an STP, go through HAZOP and PDC 3–5 before PDC 6; with no STP, skip straight from PDC 2 to PDC 6. Both routes finish PDC 6 → 7 → 8.",
+      desc: "PDC 1, then PDC 2 and HAZOP/PDC 2 run concurrently. With an STP, go through HAZOP/PDC 2 and PDC 3–5 before PDC 6; with no STP, skip straight from PDC 2 to PDC 6. Both routes finish PDC 6 → 7 → 8.",
       nodes: [
         { n: 1, id: "p1", label: "PDC 1", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 2, id: "p2", label: "PDC 2", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 3, id: "hz", label: "HAZOP", col: 2, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 4, id: "p3", label: "PDC 3", col: 3, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 5, id: "p4", label: "PDC 4", col: 4, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 6, id: "p5", label: "PDC 5", col: 5, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 7, id: "p6", label: "PDC 6", col: 6, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 8, id: "p7", label: "PDC 7", col: 7, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 9, id: "p8", label: "PDC 8", col: 8, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+        { n: 3, id: "hz", label: "HAZOP/PDC 2", col: 1, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 4, id: "p3", label: "PDC 3", col: 2, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 5, id: "p4", label: "PDC 4", col: 3, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 6, id: "p5", label: "PDC 5", col: 4, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 7, id: "p6", label: "PDC 6", col: 5, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 8, id: "p7", label: "PDC 7", col: 6, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 9, id: "p8", label: "PDC 8", col: 7, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
       ], edges: [
-        { from: "p1", to: "p2" }, { from: "p2", to: "hz", days: "with STP" },
+        { from: "p1", to: "p2" }, { from: "p1", to: "hz", days: "with STP" },
         { from: "hz", to: "p3" }, { from: "p3", to: "p4" }, { from: "p4", to: "p5" }, { from: "p5", to: "p6" },
         { from: "p2", to: "p6", days: "no STP" }, { from: "p6", to: "p7" }, { from: "p7", to: "p8" }] },
     { id: "ais", tab: "AIS", title: "AIS — Water Reticulation", desc: "Concept (MKM) and detail reticulation, then QT 1–11 in sequence.", defaultPanel: "workflow",
@@ -1460,19 +1460,25 @@
         { from: "c", to: "dr" }, { from: "dr", to: "q1" }, { from: "q1", to: "q2" }, { from: "q2", to: "q3" },
         { from: "q3", to: "q4" }, { from: "q4", to: "q5" }, { from: "q5", to: "q6" }, { from: "q6", to: "q7" },
         { from: "q7", to: "q8" }, { from: "q8", to: "q9" }, { from: "q9", to: "q10" }, { from: "q10", to: "q11" }] },
-    { id: "telco", tab: "Telco", title: "Telco — Telecommunications", desc: "KM approval, then detail approval.",
+    { id: "telco", tab: "Telco", title: "Telco — Telecommunications", desc: "KM approval, detail approval, construction, then issuance of the support letter.",
       nodes: [
         { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 2, id: "da", label: "Detail Approval", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
-      ], edges: [{ from: "km", to: "da" }] },
-    { id: "tnb", tab: "TNB", title: "TNB — Electricity Supply", desc: "KM approval, supply application, PIAT, CSP, then energisation.",
+        { n: 2, id: "da", label: "Detail Approval", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 3, id: "con", label: "Construction", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 4, id: "isl", label: "Issuance Support Letter", col: 3, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+      ], edges: [{ from: "km", to: "da" }, { from: "da", to: "con" }, { from: "con", to: "isl" }] },
+    { id: "tnb", tab: "TNB", title: "TNB — Electricity Supply", desc: "KM approval, supply application, PIAT, CSP, kickoff meeting, construction, final PIAT, energisation, then meter application.",
       nodes: [
         { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 2, id: "sa", label: "Supply Application", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 3, id: "piat", label: "PIAT", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 4, id: "csp", label: "CSP", col: 3, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 5, id: "en", label: "Energisation", col: 4, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
-      ], edges: [{ from: "km", to: "sa" }, { from: "sa", to: "piat" }, { from: "piat", to: "csp" }, { from: "csp", to: "en" }] },
+        { n: 5, id: "ko", label: "Kickoff Meeting", col: 4, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 6, id: "con", label: "Construction", col: 5, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 7, id: "fpiat", label: "Final PIAT", col: 6, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 8, id: "en", label: "Energisation", col: 7, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 9, id: "ma", label: "Meter Application", col: 8, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+      ], edges: [{ from: "km", to: "sa" }, { from: "sa", to: "piat" }, { from: "piat", to: "csp" }, { from: "csp", to: "ko" }, { from: "ko", to: "con" }, { from: "con", to: "fpiat" }, { from: "fpiat", to: "en" }, { from: "en", to: "ma" }] },
     { id: "jps", tab: "JPS", title: "JPS — Drainage & Irrigation", desc: "KM approval, then detail approval.",
       nodes: [
         { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
@@ -1568,7 +1574,8 @@
 
     let h = '<section class="pc-card"><div class="pc-head-card"><h4 class="pc-card-title" style="margin:0">Master Plan</h4><div style="display:flex;gap:8px;flex-wrap:wrap">';
     if (mp.img) {
-      h += '<button type="button" class="btn ' + (drawing ? "btn-primary" : "btn-secondary") + '" style="padding:6px 12px;font-size:12px" data-infra-mp="demarcate">' + (drawing ? "Cancel" : "＋ Demarcate zone") + "</button>" +
+      h += '<button type="button" class="btn btn-secondary" style="padding:6px 12px;font-size:12px" data-infra-mp="overall">＋ Overall</button>' +
+        '<button type="button" class="btn ' + (drawing ? "btn-primary" : "btn-secondary") + '" style="padding:6px 12px;font-size:12px" data-infra-mp="demarcate">' + (drawing ? "Cancel" : "＋ Demarcate zone") + "</button>" +
         '<label class="btn btn-secondary" style="padding:6px 12px;font-size:12px;cursor:pointer">Change plan<input type="file" accept="image/*" data-infra-mp-file style="display:none"></label>';
     }
     h += "</div></div>";
@@ -1578,13 +1585,11 @@
     }
     h += '<div class="pc-hint" style="margin-top:0;margin-bottom:8px">' +
       (drawing ? "Click on the plan to outline a zone (add ≥3 points), then Finish."
-               : (mp.zones.length ? "Click a zone to load its progress flow below." : "Demarcate a zone to start its own progress flow.")) + "</div>";
-    if (mp.zones.length && !drawing) {
-      h += '<div class="agency-grid" style="margin-bottom:10px">' + mp.zones.map(function (z) {
-        return '<span class="agency-chip ' + (z.id === mp.current ? "selected" : "") + '" data-infra-zone-chip="' + esc(z.id) + '" style="cursor:pointer">' + esc(z.name) +
-          ' <button type="button" data-infra-zone-del="' + esc(z.id) + '" title="Delete zone" style="border:none;background:none;color:#b4232a;cursor:pointer;font-weight:800;padding:0 2px;font-size:13px">×</button></span>';
-      }).join("") + "</div>";
-    }
+               : (mp.zones.length ? "Pick a zone from the list to open its progress flow, or add “Overall” for a whole-site flow."
+                                  : "Add “Overall” for a whole-site flow, or Demarcate a zone to outline one on the plan.")) + "</div>";
+
+    // Two columns: the plan (left) and the zone list (right).
+    h += '<div class="mp-layout"><div class="mp-left">';
     h += '<div class="mp-wrap"><img class="mp-img" src="' + mp.img + '" data-infra-mp-img data-mp-mode="' + (drawing ? "demarcate" : "view") + '" alt="Master plan">';
     h += '<svg class="mp-overlay' + (drawing ? " mp-draw" : "") + '" viewBox="0 0 100 100" preserveAspectRatio="none">';
     mp.zones.forEach(function (z) {
@@ -1602,11 +1607,34 @@
       const cy = z.points.reduce(function (s, p) { return s + p[1]; }, 0) / z.points.length;
       h += '<span class="mp-zlabel' + (z.id === mp.current ? " sel" : "") + '" data-infra-zone-chip="' + esc(z.id) + '" style="left:' + cx + "%;top:" + cy + '%">' + esc(z.name) + "</span>";
     });
-    h += "</div>";
+    h += "</div>";   // /mp-wrap
     if (drawing) {
       h += '<div class="sd-actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-infra-mp="finish"' + (infraDraft.length < 3 ? ' disabled style="opacity:.5;cursor:not-allowed"' : "") + ">Finish zone</button>" +
         '<button type="button" class="btn btn-secondary" data-infra-mp="undo"' + (infraDraft.length ? "" : ' disabled style="opacity:.5"') + ">Undo point</button></div>";
     }
+    h += "</div>";   // /mp-left
+
+    // Right column: the list of zones created, each with rename + remark.
+    h += '<aside class="mp-sidelist"><div class="mp-side-title">Zones</div>';
+    if (!mp.zones.length) {
+      h += '<div class="pc-hint" style="margin:0">No zones yet. Click “＋ Overall” or “＋ Demarcate zone” to add one.</div>';
+    } else {
+      h += mp.zones.map(function (z) {
+        const sel = z.id === mp.current;
+        const isOverall = !z.points || z.points.length < 3;
+        return '<div class="mp-zrow' + (sel ? " sel" : "") + '">' +
+          '<div class="mp-zrow-head">' +
+            '<input class="mp-zname" data-infra-zone-name="' + esc(z.id) + '" value="' + esc(z.name) + '" placeholder="Zone name" aria-label="Zone name">' +
+            '<button type="button" class="mp-zdel" data-infra-zone-del="' + esc(z.id) + '" title="Delete zone" aria-label="Delete zone">×</button>' +
+          '</div>' +
+          (isOverall ? '<span class="mp-ztag">whole site</span>' : "") +
+          '<input class="mp-zremark" data-infra-zone-remark="' + esc(z.id) + '" value="' + esc(z.remark || "") + '" placeholder="Add remark…" aria-label="Zone remark">' +
+          '<button type="button" class="mp-zopen' + (sel ? " is-open" : "") + '" data-infra-zone-chip="' + esc(z.id) + '">' + (sel ? "✓ Showing progress flow below" : "Open progress flow →") + '</button>' +
+          "</div>";
+      }).join("");
+    }
+    h += "</aside></div>";   // /mp-sidelist /mp-layout
+
     el.innerHTML = h + "</section>";
   }
 
@@ -1938,6 +1966,19 @@
       if (mpBtn) {
         const act = mpBtn.getAttribute("data-infra-mp"), f = infraCurFlow();
         if (act === "demarcate") { infraMpMode = infraMpMode === "demarcate" ? null : "demarcate"; infraDraft = []; renderMasterplan(f, masterBody); }
+        else if (act === "overall") {
+          if (!f.masterplan.zones) f.masterplan.zones = [];
+          const existing = f.masterplan.zones.find(function (z) { return (z.name || "").trim().toLowerCase() === "overall"; });
+          if (existing) { f.masterplan.current = existing.id; }
+          else {
+            const id = "z" + f.masterplan.zones.length + "-" + Date.now().toString(36);
+            f.masterplan.zones.push({ id: id, name: "Overall", points: [], nodes: {} });
+            f.masterplan.current = id;
+          }
+          infraMpMode = null; infraDraft = []; infraPanelNode = null;
+          const p = masterBody.querySelector("[data-infra-panel]"); if (p) p.innerHTML = "";
+          infraSave(); renderInfra(masterBody);
+        }
         else if (act === "undo") { infraDraft.pop(); renderMasterplan(f, masterBody); }
         else if (act === "finish") {
           if (infraDraft.length < 3) return;
@@ -2006,6 +2047,17 @@
       if (el) handleInfraChange(el);
     });
     masterBody.addEventListener("input", function (e) {
+      const zf = e.target.closest("[data-infra-zone-name], [data-infra-zone-remark]");
+      if (zf) {
+        const f = infraCurFlow(); if (!f || !f.masterplan) return;
+        const id = zf.getAttribute("data-infra-zone-name") || zf.getAttribute("data-infra-zone-remark");
+        const z = (f.masterplan.zones || []).find(function (x) { return x.id === id; });
+        if (z) {
+          if (zf.hasAttribute("data-infra-zone-name")) z.name = zf.value; else z.remark = zf.value;
+          infraSave();   // no re-render — keep the caret in the field being typed
+        }
+        return;
+      }
       const el = e.target.closest("[data-infra-input]");
       if (el) handleInfraInput(el);
     });

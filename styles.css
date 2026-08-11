@@ -1789,3 +1789,21 @@ body {
 .mp-draftpt { fill: #1f5fa8; }
 .mp-zlabel { position: absolute; transform: translate(-50%, -50%); background: rgba(255,255,255,.9); border: 1px solid var(--brand-green); color: var(--brand-green-dark); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; cursor: pointer; white-space: nowrap; font-family: var(--font-sans); }
 .mp-zlabel.sel { border-color: #1f5fa8; color: #1f5fa8; }
+
+/* Master Plan — two columns: plan (left) + zone list side panel (right) */
+.mp-layout { display: grid; grid-template-columns: 1.35fr 1fr; gap: 14px; align-items: start; margin-top: 4px; }
+.mp-left { min-width: 0; }
+.mp-left .mp-wrap { margin-top: 0; }
+.mp-sidelist { border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: var(--white); }
+.mp-side-title { font-weight: 700; font-size: 13px; color: var(--ink); margin-bottom: 10px; }
+.mp-zrow { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 8px; background: var(--bg); }
+.mp-zrow.sel { border-color: #1f5fa8; background: #eef4fb; }
+.mp-zrow-head { display: flex; align-items: center; gap: 6px; }
+.mp-zname { flex: 1; min-width: 0; font-weight: 700; font-size: 13px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--white); color: var(--ink); }
+.mp-zdel { border: none; background: none; color: #b4232a; cursor: pointer; font-weight: 800; font-size: 16px; line-height: 1; padding: 0 4px; }
+.mp-zremark { width: 100%; margin-top: 8px; font-size: 12.5px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--white); color: var(--ink); box-sizing: border-box; }
+.mp-zopen { margin-top: 8px; width: 100%; border: 1px solid var(--brand-green); background: var(--white); color: var(--brand-green-dark); font-size: 12px; font-weight: 700; padding: 6px 8px; border-radius: 6px; cursor: pointer; }
+.mp-zopen:hover { background: var(--brand-green-light); }
+.mp-zopen.is-open { background: var(--brand-green); color: #fff; border-color: var(--brand-green); cursor: default; }
+.mp-ztag { display: inline-block; margin-top: 6px; font-size: 10.5px; color: var(--muted); background: var(--line); padding: 1px 7px; border-radius: 999px; }
+@media (max-width: 900px) { .mp-layout { grid-template-columns: 1fr; } }
