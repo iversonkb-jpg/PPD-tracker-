@@ -615,7 +615,7 @@
      #masterBody (see the master-body click/change listeners below). */
   function seedDesignApproval() {
     return {
-      basePlan: { planUrl: "#", planDate: "26 Mar 26", briefUrl: "#", briefDate: "26 Mar 26", docRegUrl: "#", docRegDate: "28 Mar 26" },
+      basePlan: { planFile: "", briefUrl: "#", briefDate: "26 Mar 26", docRegUrl: "#", docRegDate: "28 Mar 26" },
       briefing: { outlookUrl: "#", date: "2026-04-07", confirmed: true, confirmedAt: "07 Apr 2026, 10:15 AM" },
       meetings: [
         { n: 1, outlookUrl: "#", date: "2026-04-21", confirmed: true, confirmedAt: "14 Apr 2026, 9:02 AM", minutesUrl: "#", docRegUrl: "#", feasiUrl: "#", acceptable: false },
@@ -652,6 +652,12 @@
     return '<div class="da-item"><span>' + esc(label) + " " + (extra || "") + "</span>" +
       (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">Open ›</a>' : '<span class="da-pending">pending upload</span>') + "</div>";
   }
+  // Real file upload row (shows the picked filename as a chip).
+  function daUpload(label, filename, act) {
+    return '<div class="da-item"><span>' + esc(label) + "</span>" +
+      (filename ? '<span class="da-stamp"><span class="da-dot"></span><b>Uploaded</b> <span class="da-time">' + esc(filename) + "</span></span>"
+                : '<label class="btn btn-secondary" style="padding:7px 16px;font-size:12.5px;cursor:pointer">Upload<input type="file" data-da-file="' + act + '" style="display:none"></label>') + "</div>";
+  }
   function daHtml(d) {
     const acceptedMeeting = d.meetings.find(function (m) { return m.acceptable === true; });
     const lastClearance = d.clearances[d.clearances.length - 1];
@@ -667,7 +673,7 @@
       '<span class="st-chip ' + (d.final.approved ? "st-completed" : "st-in-progress") + '">' + (d.final.approved ? "Completed" : "In Progress") + "</span></div>";
 
     h += '<section class="pc-card"><h4 class="pc-card-title">1.1 Base Plan (approved by Mgmt)</h4>' +
-      daLinkRow("Link to approved base plan (auto-linked from Product Planning Flow)", d.basePlan.planUrl, d.basePlan.planDate) +
+      daUpload("PPD to upload approved base plan", d.basePlan.planFile, "basePlanUpload") +
       daLinkRow("Project brief & timeline (link to master programme)", d.basePlan.briefUrl, d.basePlan.briefDate) +
       daLinkRow("Documents registration", d.basePlan.docRegUrl, d.basePlan.docRegDate) + "</section>";
 
@@ -1374,6 +1380,15 @@
       openMkmStep(Number(node.getAttribute("data-dash-step")));
     });
     masterBody.addEventListener("change", function (e) {
+      const daFile = e.target.closest("[data-da-file]");
+      if (daFile) {
+        const step = activeSteps[selectedStepIndex]; const file = daFile.files && daFile.files[0];
+        if (step && step.da && file) {
+          if (daFile.getAttribute("data-da-file") === "basePlanUpload") step.da.basePlan.planFile = file.name;
+          renderDesignApproval(selectedStepIndex);
+        }
+        return;
+      }
       const oc = e.target.closest('input[data-da="outcome"]');
       if (!oc) return;
       const step = activeSteps[selectedStepIndex];
