@@ -1469,8 +1469,8 @@
       ], edges: [{ from: "km", to: "da" }, { from: "da", to: "con" }, { from: "con", to: "isl" }] },
     { id: "tnb", tab: "TNB", title: "TNB — Electricity Supply", desc: "KM approval, supply application, PIAT, CSP, kickoff meeting, construction, final PIAT, energisation, then meter application.",
       nodes: [
-        { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 2, id: "sa", label: "Supply Application", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "workflow" },
+        { n: 2, id: "sa", label: "Supply Application", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "workflow" },
         { n: 3, id: "piat", label: "PIAT", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 4, id: "csp", label: "CSP", col: 3, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 5, id: "ko", label: "Kickoff Meeting", col: 4, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
