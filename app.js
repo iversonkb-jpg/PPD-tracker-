@@ -1434,7 +1434,7 @@
         { n: 4, id: "p3", label: "PDC 3", col: 2, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 5, id: "p4", label: "PDC 4", col: 3, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 6, id: "p5", label: "PDC 5", col: 4, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 7, id: "p6", label: "PDC 6", col: 5, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 7, id: "p6", label: "PDC 6", col: 5, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "iwk-pdc6" },
         { n: 8, id: "p7", label: "PDC 7", col: 6, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 9, id: "p8", label: "PDC 8", col: 7, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
       ], edges: [
@@ -1756,6 +1756,7 @@
     const pt = infraPanelType(n), rec = infraNodeRecord(n);
     if (pt === "jas-emp" || pt === "workflow") { if (!rec.work) rec.work = infraEmpDefault(); }
     else if (pt === "jas-eia" || pt === "link") { if (!rec.work) rec.work = { date: "—" }; }
+    else if (pt === "iwk-pdc6") { if (!rec.work) rec.work = { ackFile: "", date: "", confirmed: false, confirmedAt: "" }; }
   }
   // Generic "approved document" link panel (e.g. Majlis KM Approval → MKM 7.4).
   // Driven by node.heading + node.linkLabel so adding one is a data change.
@@ -1771,6 +1772,19 @@
            : '<label class="btn btn-secondary" style="padding:7px 16px;font-size:12.5px;cursor:pointer">Upload<input type="file" data-infra-file="' + act + '" data-i="' + i + '" style="display:none"></label>') + "</div>";
   }
   function ifStamp(when) { return '<span class="if-stamp" style="margin-top:12px"><span class="if-dot"></span><b>System submitted</b> <span class="if-time">' + esc(when) + "</span></span>"; }
+  // PDC 6 (IWK) — starts with 7.1: upload the acknowledgement + hardcopy doc, then
+  // key in the date (can be done later — the date stays editable after Confirm).
+  function pdc6Html(w, P) {
+    return '<section class="pc-card">' +
+      '<div class="pc-q-label" style="margin-top:0">' + P + '.1 Consultant to upload acknowledgement of PDC 6 submission and hardcopy doc/drawings</div>' +
+      ifUpload("Acknowledgement + submitted hardcopy", w.ackFile, "pdc6Ack", 0) +
+      (w.confirmed
+        ? '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:14px"><input type="date" class="sd-input" style="max-width:240px" value="' + esc(w.date) + '" data-infra-change="pdc6Date" aria-label="PDC 6 acknowledgement date">' + ifStamp(w.confirmedAt) + "</div>" +
+          '<div class="pc-hint" style="margin-top:8px">You can still key in or adjust the date above.</div>'
+        : '<div style="margin-top:14px"><input type="date" class="sd-input" style="max-width:240px" value="' + esc(w.date) + '" data-infra-change="pdc6Date" aria-label="PDC 6 acknowledgement date"></div>' +
+          '<div class="sd-actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-infra-act="pdc6Confirm">Confirm</button><button type="button" class="btn btn-secondary" data-infra-act="cancel">Cancel</button></div>') +
+      "</section>";
+  }
   function eiaHtml(w) {
     return '<h4 class="pc-card-title" style="font-size:19px">Approved Environmental Impact Assessment Report</h4>' +
       '<div class="if-linkrow"><a href="#" onclick="return false">Link to approved report (auto-linked from MKM JAS 6.1)</a><span style="font-weight:700">' + esc(w.date || "—") + "</span></div>";
@@ -1879,6 +1893,7 @@
     else if (pt === "jas-emp") { title = "EMP — Environmental Management Plan" + zoneTag; body = empHtml(rec.work, n.n); }
     else if (pt === "workflow") { title = (n.heading || n.label) + zoneTag; body = empHtml(rec.work, n.n); }
     else if (pt === "link") { title = n.heading || n.label; body = linkPanelHtml(n, rec.work); }
+    else if (pt === "iwk-pdc6") { title = (n.heading || n.label) + zoneTag; body = pdc6Html(rec.work, n.n); }
     else { title = n.label; body = '<p class="sd-note">Working page for this step is coming next.</p>'; }
     panelEl.innerHTML = '<section class="pc-card" style="border-color:var(--brand-green);margin-top:14px">' +
       '<div class="pc-head-card"><div class="pc-authority">' + esc(title) + "</div>" +
@@ -1904,6 +1919,7 @@
     if (act === "pcConfirm") { const v = (document.getElementById("if-pcdate" + i) || {}).value; if (!v) { alert("Pick a date first"); return; } w.rounds[i].date = v; w.rounds[i].confirmed = true; w.rounds[i].confirmedAt = infraNow(); }
     else if (act === "pcAdd") { w.rounds.push({ n: w.rounds.length + 1, date: "", confirmed: false, confirmedAt: "", notesFile: "" }); }
     else if (act === "reviseConfirm") { const v = (document.getElementById("if-revdate") || {}).value; if (!v) { alert("Pick a date first"); return; } w.revise = { date: v, confirmed: true, confirmedAt: infraNow() }; }
+    else if (act === "pdc6Confirm") { if (!w.ackFile) { alert("Upload the acknowledgement document first"); return; } w.confirmed = true; w.confirmedAt = infraNow(); }
     else if (act === "subApprove") { w.submissions[i].status = "approved"; }
     else if (act === "subRevise") { w.submissions[i].status = "revision"; if (i === w.submissions.length - 1) w.submissions.push({ n: w.submissions.length + 1, file: "", status: "in-review" }); }
     else if (act === "clrSubmit") { const c = w.clearance[i]; if (!c.type) { alert("Select the letter type first"); return; } if (!c.fileName) { alert("Upload the letter first"); return; } c.submitted = true; c.submittedAt = infraNow(); }
@@ -1930,6 +1946,7 @@
     else if (act === "clrUpload") w.clearance[i].fileName = f.name;
     else if (act === "apUploadI") a.i.file = f.name;
     else if (act === "apUploadIV") a.iv.doc = f.name;
+    else if (act === "pdc6Ack") w.ackFile = f.name;
     else return;
     infraRenderPanel();
   }
@@ -1945,6 +1962,7 @@
     else if (act === "apIdate") a.i.date = v;
     else if (act === "apReq") a.ii.req = v;
     else if (act === "apIIdate") a.ii.date = v;
+    else if (act === "pdc6Date") w.date = v;
     else return;
     infraRenderPanel();
   }
