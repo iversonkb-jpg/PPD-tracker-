@@ -1471,11 +1471,11 @@
       nodes: [
         { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "workflow" },
         { n: 2, id: "sa", label: "Supply Application", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "workflow" },
-        { n: 3, id: "piat", label: "PIAT", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 4, id: "csp", label: "CSP", col: 3, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 5, id: "ko", label: "TNB Kickoff Meeting", col: 4, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 6, id: "en", label: "Energisation", col: 5, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 7, id: "ma", label: "Meter Application", col: 6, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+        { n: 3, id: "piat", label: "PIAT", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "iwk-pdc7" },
+        { n: 4, id: "csp", label: "CSP", col: 3, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "tnb-csp" },
+        { n: 5, id: "ko", label: "TNB Kickoff Meeting", col: 4, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "tnb-ko" },
+        { n: 6, id: "en", label: "Energisation", col: 5, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "tnb-en" },
+        { n: 7, id: "ma", label: "Meter Application", col: 6, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "tnb-ma" }
       ], edges: [{ from: "km", to: "sa" }, { from: "sa", to: "piat" }, { from: "piat", to: "csp" }, { from: "csp", to: "ko" }, { from: "ko", to: "en" }, { from: "en", to: "ma" }] },
     { id: "jps", tab: "JPS", title: "JPS — Drainage & Irrigation", desc: "KM approval, then detail approval.",
       nodes: [
@@ -1756,6 +1756,9 @@
     else if (pt === "jas-eia" || pt === "link") { if (!rec.work) rec.work = { date: "—" }; }
     else if (pt === "iwk-pdc6") { if (!rec.work) rec.work = { ackFile: "", date: "", confirmed: false, confirmedAt: "" }; }
     else if (pt === "iwk-pdc7" || pt === "iwk-pdc8") { if (!rec.work) rec.work = { inspDate: "", inspConfirmed: false, inspConfirmedAt: "", notesFile: "", ackFile: "", clearance: [{ rev: 0, type: "", fileName: "", date: "", ref: "", comment: "", submitted: false, submittedAt: "" }] }; }
+    else if (pt === "tnb-csp") { if (!rec.work) rec.work = { cspFile: "" }; }
+    else if (pt === "tnb-ko" || pt === "tnb-en") { if (!rec.work) rec.work = { date: "", confirmed: false, confirmedAt: "" }; }
+    else if (pt === "tnb-ma") { if (!rec.work) rec.work = { docFile: "", complete: false, completedAt: "" }; }
   }
   // Generic "approved document" link panel (e.g. Majlis KM Approval → MKM 7.4).
   // Driven by node.heading + node.linkLabel so adding one is a data change.
@@ -1843,6 +1846,35 @@
   // PDC 8 (IWK): Site Inspection (9.1/9.2) · Payment (9.3/9.4) · Submitted Documents (9.5) · Clearance (9.6).
   function pdc8Html(w, P) {
     return siteInspectionHtml(w, P) + paymentHtml(w, P) + submittedDocsHtml(w, P + ".5") + clearanceHtml(w, P + ".6");
+  }
+  // Single "key in a date" panel (date + Confirm; the date stays editable after).
+  function singleDateHtml(w, clause, q) {
+    return '<section class="pc-card">' +
+      '<div class="pc-q-label" style="margin-top:0">' + clause + ' ' + esc(q) + '</div>' +
+      (w.confirmed
+        ? '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:6px"><input type="date" class="sd-input" style="max-width:240px" value="' + esc(w.date) + '" data-infra-change="singleDate" aria-label="' + esc(q) + '">' + ifStamp(w.confirmedAt) + "</div>"
+        : '<div style="margin-top:6px"><input type="date" class="sd-input" style="max-width:240px" value="' + esc(w.date) + '" data-infra-change="singleDate" aria-label="' + esc(q) + '"></div>' +
+          '<div class="sd-actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-infra-act="singleConfirm">Confirm</button><button type="button" class="btn btn-secondary" data-infra-act="cancel">Cancel</button></div>') +
+      "</section>";
+  }
+  // TNB CSP — Payment: X.1 upload CSP amount, X.2 raise PRF for CSP (placeholder).
+  function tnbCspHtml(w, P) {
+    return '<section class="pc-card"><h4 class="pc-card-title" style="margin-top:0">Payment</h4>' +
+      '<div class="pc-q-label">' + P + '.1 Consultant to upload CSP amount</div>' +
+      ifUpload("CSP amount", w.cspFile, "cspAmount", 0) +
+      '<div class="pc-q" style="margin-top:16px"><div class="pc-q-label">' + P + '.2 PPD to raise PRF for CSP</div>' +
+      '<button type="button" class="btn btn-secondary" title="Coming soon — placeholder" style="margin-top:8px">Raise PRF</button></div>' +
+      "</section>";
+  }
+  // TNB Meter Application — X.1 upload required document, X.2 tick complete once installed.
+  function tnbMaHtml(w, P) {
+    return '<section class="pc-card">' +
+      '<div class="pc-q-label" style="margin-top:0">' + P + '.1 PPD to upload required document to contractor</div>' +
+      ifUpload("Required document", w.docFile, "maDoc", 0) +
+      '<div class="pc-q" style="margin-top:16px"><div class="pc-q-label">' + P + '.2 PPD to tick complete once meter installed at site</div>' +
+      '<label class="pc-check" style="display:inline-flex;align-items:center;gap:8px;margin-top:6px;cursor:pointer"><input type="checkbox" data-infra-change="maComplete"' + (w.complete ? " checked" : "") + '> Meter installed — mark complete</label>' +
+      (w.complete ? '<div style="margin-top:8px">' + ifStamp(w.completedAt) + "</div>" : "") +
+      "</div></section>";
   }
   function eiaHtml(w) {
     return '<h4 class="pc-card-title" style="font-size:19px">Approved Environmental Impact Assessment Report</h4>' +
@@ -1940,6 +1972,10 @@
     else if (pt === "iwk-pdc6") { title = (n.heading || n.label); body = pdc6Html(rec.work, n.n); }
     else if (pt === "iwk-pdc7") { title = (n.heading || n.label); body = pdc7Html(rec.work, n.n); }
     else if (pt === "iwk-pdc8") { title = (n.heading || n.label); body = pdc8Html(rec.work, n.n); }
+    else if (pt === "tnb-csp") { title = (n.heading || n.label); body = tnbCspHtml(rec.work, n.n); }
+    else if (pt === "tnb-ko") { title = (n.heading || n.label); body = singleDateHtml(rec.work, n.n + ".1", "Consultant to key in TNB Kickoff Meeting"); }
+    else if (pt === "tnb-en") { title = (n.heading || n.label); body = singleDateHtml(rec.work, n.n + ".1", "Consultant to key in date for energisation"); }
+    else if (pt === "tnb-ma") { title = (n.heading || n.label); body = tnbMaHtml(rec.work, n.n); }
     else { title = n.label; body = '<p class="sd-note">Working page for this step is coming next.</p>'; }
     panelEl.innerHTML = '<section class="pc-card" style="border-color:var(--brand-green);margin-top:14px">' +
       '<div class="pc-head-card"><div class="pc-authority">' + esc(title) + zoneTag + "</div>" +
@@ -1967,6 +2003,7 @@
     else if (act === "reviseConfirm") { const v = (document.getElementById("if-revdate") || {}).value; if (!v) { alert("Pick a date first"); return; } w.revise = { date: v, confirmed: true, confirmedAt: infraNow() }; }
     else if (act === "pdc6Confirm") { if (!w.ackFile) { alert("Upload the acknowledgement document first"); return; } w.confirmed = true; w.confirmedAt = infraNow(); }
     else if (act === "inspConfirm") { if (!w.inspDate) { alert("Key in the inspection date first"); return; } w.inspConfirmed = true; w.inspConfirmedAt = infraNow(); }
+    else if (act === "singleConfirm") { if (!w.date) { alert("Key in the date first"); return; } w.confirmed = true; w.confirmedAt = infraNow(); }
     else if (act === "subApprove") { w.submissions[i].status = "approved"; }
     else if (act === "subRevise") { w.submissions[i].status = "revision"; if (i === w.submissions.length - 1) w.submissions.push({ n: w.submissions.length + 1, file: "", status: "in-review" }); }
     else if (act === "clrSubmit") { const c = w.clearance[i]; if (!c.type) { alert("Select the letter type first"); return; } if (!c.fileName) { alert("Upload the letter first"); return; } c.submitted = true; c.submittedAt = infraNow(); }
@@ -1996,6 +2033,8 @@
     else if (act === "pdc6Ack") w.ackFile = f.name;
     else if (act === "inspNotes") w.notesFile = f.name;
     else if (act === "ackDoc") w.ackFile = f.name;
+    else if (act === "cspAmount") w.cspFile = f.name;
+    else if (act === "maDoc") w.docFile = f.name;
     else return;
     infraRenderPanel();
   }
@@ -2013,6 +2052,8 @@
     else if (act === "apIIdate") a.ii.date = v;
     else if (act === "pdc6Date") w.date = v;
     else if (act === "inspDate") w.inspDate = v;
+    else if (act === "singleDate") w.date = v;
+    else if (act === "maComplete") { w.complete = el.checked; w.completedAt = el.checked ? infraNow() : ""; }
     else return;
     infraRenderPanel();
   }
