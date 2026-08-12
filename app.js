@@ -1467,18 +1467,16 @@
         { n: 3, id: "con", label: "Construction", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 4, id: "isl", label: "Issuance Support Letter", col: 3, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
       ], edges: [{ from: "km", to: "da" }, { from: "da", to: "con" }, { from: "con", to: "isl" }] },
-    { id: "tnb", tab: "TNB", title: "TNB — Electricity Supply", desc: "KM approval, supply application, PIAT, CSP, kickoff meeting, construction, final PIAT, energisation, then meter application.",
+    { id: "tnb", tab: "TNB", title: "TNB — Electricity Supply", desc: "KM approval, supply application, PIAT, CSP, TNB kickoff meeting, energisation, then meter application.",
       nodes: [
         { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "workflow" },
         { n: 2, id: "sa", label: "Supply Application", col: 1, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "workflow" },
         { n: 3, id: "piat", label: "PIAT", col: 2, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 4, id: "csp", label: "CSP", col: 3, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 5, id: "ko", label: "Kickoff Meeting", col: 4, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 6, id: "con", label: "Construction", col: 5, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 7, id: "fpiat", label: "Final PIAT", col: 6, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 8, id: "en", label: "Energisation", col: 7, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 9, id: "ma", label: "Meter Application", col: 8, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
-      ], edges: [{ from: "km", to: "sa" }, { from: "sa", to: "piat" }, { from: "piat", to: "csp" }, { from: "csp", to: "ko" }, { from: "ko", to: "con" }, { from: "con", to: "fpiat" }, { from: "fpiat", to: "en" }, { from: "en", to: "ma" }] },
+        { n: 5, id: "ko", label: "TNB Kickoff Meeting", col: 4, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 6, id: "en", label: "Energisation", col: 5, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
+        { n: 7, id: "ma", label: "Meter Application", col: 6, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+      ], edges: [{ from: "km", to: "sa" }, { from: "sa", to: "piat" }, { from: "piat", to: "csp" }, { from: "csp", to: "ko" }, { from: "ko", to: "en" }, { from: "en", to: "ma" }] },
     { id: "jps", tab: "JPS", title: "JPS — Drainage & Irrigation", desc: "KM approval, then detail approval.",
       nodes: [
         { n: 1, id: "km", label: "KM Approval", col: 0, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
