@@ -1435,8 +1435,8 @@
         { n: 5, id: "p4", label: "PDC 4", col: 3, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 6, id: "p5", label: "PDC 5", col: 4, lane: 1, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
         { n: 7, id: "p6", label: "PDC 6", col: 5, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "iwk-pdc6" },
-        { n: 8, id: "p7", label: "PDC 7", col: 6, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" },
-        { n: 9, id: "p8", label: "PDC 8", col: 7, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—" }
+        { n: 8, id: "p7", label: "PDC 7", col: 6, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "iwk-pdc7" },
+        { n: 9, id: "p8", label: "PDC 8", col: 7, lane: 0, state: "todo", ts: "—", as: "—", te: "—", ae: "—", panel: "iwk-pdc8" }
       ], edges: [
         { from: "p1", to: "p2" }, { from: "p1", to: "hz", days: "with STP" },
         { from: "hz", to: "p3" }, { from: "p3", to: "p4" }, { from: "p4", to: "p5" }, { from: "p5", to: "p6" },
@@ -1757,6 +1757,7 @@
     if (pt === "jas-emp" || pt === "workflow") { if (!rec.work) rec.work = infraEmpDefault(); }
     else if (pt === "jas-eia" || pt === "link") { if (!rec.work) rec.work = { date: "—" }; }
     else if (pt === "iwk-pdc6") { if (!rec.work) rec.work = { ackFile: "", date: "", confirmed: false, confirmedAt: "" }; }
+    else if (pt === "iwk-pdc7" || pt === "iwk-pdc8") { if (!rec.work) rec.work = { inspDate: "", inspConfirmed: false, inspConfirmedAt: "", notesFile: "", ackFile: "", clearance: [{ rev: 0, type: "", fileName: "", date: "", ref: "", comment: "", submitted: false, submittedAt: "" }] }; }
   }
   // Generic "approved document" link panel (e.g. Majlis KM Approval → MKM 7.4).
   // Driven by node.heading + node.linkLabel so adding one is a data change.
@@ -1772,8 +1773,8 @@
            : '<label class="btn btn-secondary" style="padding:7px 16px;font-size:12.5px;cursor:pointer">Upload<input type="file" data-infra-file="' + act + '" data-i="' + i + '" style="display:none"></label>') + "</div>";
   }
   function ifStamp(when) { return '<span class="if-stamp" style="margin-top:12px"><span class="if-dot"></span><b>System submitted</b> <span class="if-time">' + esc(when) + "</span></span>"; }
-  // PDC 6 (IWK) — starts with 7.1: upload the acknowledgement + hardcopy doc, then
-  // key in the date (can be done later — the date stays editable after Confirm).
+  // PDC 6 (IWK) — 7.1 upload the acknowledgement + hardcopy doc (date can be keyed
+  // in later — it stays editable after Confirm); 7.2 raise PRF for the processing fee.
   function pdc6Html(w, P) {
     return '<section class="pc-card">' +
       '<div class="pc-q-label" style="margin-top:0">' + P + '.1 Consultant to upload acknowledgement of PDC 6 submission and hardcopy doc/drawings</div>' +
@@ -1783,7 +1784,67 @@
           '<div class="pc-hint" style="margin-top:8px">You can still key in or adjust the date above.</div>'
         : '<div style="margin-top:14px"><input type="date" class="sd-input" style="max-width:240px" value="' + esc(w.date) + '" data-infra-change="pdc6Date" aria-label="PDC 6 acknowledgement date"></div>' +
           '<div class="sd-actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-infra-act="pdc6Confirm">Confirm</button><button type="button" class="btn btn-secondary" data-infra-act="cancel">Cancel</button></div>') +
+      "</section>" +
+      prfPlaceholderHtml(P + ".2", "PPD to raise PRF for Processing Fee");
+  }
+  // Non-functional "Raise PRF" placeholder (matches Step 3/4's Raise PR/PRF buttons).
+  function prfPlaceholderHtml(clause, label) {
+    return '<section class="pc-card"><div class="pc-q" style="margin-top:0"><div class="pc-q-label">' + clause + ' ' + esc(label) + '</div>' +
+      '<button type="button" class="btn btn-secondary" title="Coming soon — placeholder" style="margin-top:8px">Raise PRF</button></div></section>';
+  }
+  // Site Inspection — X.1 key in the inspection date (Confirm stamps it, stays
+  // editable), X.2 upload comments / notes. Shared by PDC 7 and PDC 8.
+  function siteInspectionHtml(w, P) {
+    return '<section class="pc-card"><h4 class="pc-card-title" style="margin-top:0">Site Inspection</h4>' +
+      '<div class="pc-q-label">' + P + '.1 Consultant to key in Inspection Date</div>' +
+      (w.inspConfirmed
+        ? '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><input type="date" class="sd-input" style="max-width:240px" value="' + esc(w.inspDate) + '" data-infra-change="inspDate" aria-label="Inspection date">' + ifStamp(w.inspConfirmedAt) + "</div>"
+        : '<div style="margin-top:2px"><input type="date" class="sd-input" style="max-width:240px" value="' + esc(w.inspDate) + '" data-infra-change="inspDate" aria-label="Inspection date"></div>' +
+          '<div class="sd-actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-infra-act="inspConfirm">Confirm</button><button type="button" class="btn btn-secondary" data-infra-act="cancel">Cancel</button></div>') +
+      '<div class="pc-q-label" style="margin-top:16px">' + P + '.2 Consultant to upload comments / notes</div>' +
+      ifUpload("Comments / notes", w.notesFile, "inspNotes", 0) +
       "</section>";
+  }
+  // Submitted Documents — "<clause> Consultant to upload acknowledge documents".
+  function submittedDocsHtml(w, clause) {
+    return '<section class="pc-card"><h4 class="pc-card-title" style="margin-top:0">Submitted Documents</h4>' +
+      '<div class="pc-q-label">' + clause + ' Consultant to upload acknowledge documents</div>' +
+      ifUpload("Acknowledge documents", w.ackFile, "ackDoc", 0) +
+      "</section>";
+  }
+  // Payment (PDC 8) — two Raise-PRF placeholders: Bank Guarantee and KWSMP.
+  function paymentHtml(w, P) {
+    return '<section class="pc-card"><h4 class="pc-card-title" style="margin-top:0">Payment</h4>' +
+      '<div class="pc-q" style="margin-top:0"><div class="pc-q-label">' + P + '.3 PPD to raise PRF for Bank Guarantee</div><button type="button" class="btn btn-secondary" title="Coming soon — placeholder" style="margin-top:8px">Raise PRF</button></div>' +
+      '<div class="pc-q" style="margin-top:16px"><div class="pc-q-label">' + P + '.4 PPD to raise PRF for KWSMP (if required)</div><button type="button" class="btn btn-secondary" title="Coming soon — placeholder" style="margin-top:8px">Raise PRF</button></div>' +
+      "</section>";
+  }
+  // Clearance letter block — reused by PDC 7 (8.4), PDC 8 (9.6) and the generic
+  // workflow panel (X.7). `clause` is the full label, e.g. "8.4".
+  function clearanceHtml(w, clause) {
+    return '<section class="pc-card"><h4 class="pc-card-title">Clearance</h4>' +
+      w.clearance.map(function (c, i) {
+        return '<div class="' + (i > 0 ? "if-card" : "") + '">' +
+          (i > 0 ? '<div class="if-title">Rev ' + c.rev + " " + (c.submitted ? '<span class="st-chip st-completed">Submitted</span>' : '<span class="st-chip st-na">Draft</span>') + "</div>" : "") +
+          '<div class="pc-q-label">' + clause + ' Consultant to upload:' + (i > 0 ? " (rev " + c.rev + ")" : "") + "</div>" +
+          '<div class="pc-hint" style="margin-top:0;margin-bottom:8px">' + INFRA_LETTER_TYPES.join(", ") + "</div>" +
+          '<select class="sd-input" ' + (c.submitted ? "disabled" : "") + ' data-infra-change="clrType" data-i="' + i + '"><option value="" ' + (c.type ? "" : "selected") + ' disabled>Select letter type…</option>' + INFRA_LETTER_TYPES.map(function (t) { return "<option " + (c.type === t ? "selected" : "") + ">" + esc(t) + "</option>"; }).join("") + "</select>" +
+          '<div style="display:flex;gap:12px;align-items:center;margin:10px 0;flex-wrap:wrap">' +
+            (c.fileName ? '<span class="if-chip">📄 ' + esc(c.fileName) + "</span>" : '<label class="btn btn-secondary" style="cursor:pointer' + (c.submitted ? ";opacity:.5;pointer-events:none" : "") + '">Upload letter<input type="file" data-infra-file="clrUpload" data-i="' + i + '" style="display:none"></label>') +
+            '<input type="date" class="sd-input" style="max-width:210px" ' + (c.submitted ? "disabled" : "") + ' value="' + esc(c.date) + '" data-infra-change="clrDate" data-i="' + i + '"></div>' +
+          '<input type="text" class="sd-input" placeholder="Reference no. (e.g. EG/SMP/JAS/2026)" ' + (c.submitted ? "disabled" : "") + ' value="' + esc(c.ref) + '" data-infra-input="clrRef" data-i="' + i + '">' +
+          '<div class="pc-q-label" style="margin-top:12px">Condition &amp; Comment by Authority</div>' +
+          '<textarea class="sd-input" rows="3" placeholder="Enter condition / comment by authority…" ' + (c.submitted ? "disabled" : "") + ' data-infra-input="clrComment" data-i="' + i + '">' + esc(c.comment) + "</textarea>" +
+          (c.submitted ? ifStamp(c.submittedAt) : '<div class="sd-actions" style="margin-top:12px"><button class="btn btn-primary" data-infra-act="clrSubmit" data-i="' + i + '">Submit</button></div>') + "</div>";
+      }).join("") + "</section>";
+  }
+  // PDC 7 (IWK): Site Inspection (8.1/8.2) · Submitted Documents (8.3) · Clearance (8.4).
+  function pdc7Html(w, P) {
+    return siteInspectionHtml(w, P) + submittedDocsHtml(w, P + ".3") + clearanceHtml(w, P + ".4");
+  }
+  // PDC 8 (IWK): Site Inspection (9.1/9.2) · Payment (9.3/9.4) · Submitted Documents (9.5) · Clearance (9.6).
+  function pdc8Html(w, P) {
+    return siteInspectionHtml(w, P) + paymentHtml(w, P) + submittedDocsHtml(w, P + ".5") + clearanceHtml(w, P + ".6");
   }
   function eiaHtml(w) {
     return '<h4 class="pc-card-title" style="font-size:19px">Approved Environmental Impact Assessment Report</h4>' +
@@ -1827,22 +1888,7 @@
       '<div class="pc-hint" style="margin-top:0">' + (approved ? "PPD approved the submission in " + P + ".5 — upload the submitted set and acknowledgement." : "Available after PPD approves the submission in " + P + ".5.") + "</div>" +
       '<div style="' + (approved ? "" : "opacity:.45;pointer-events:none") + '">' + ifUpload("Submitted drawings / documents", w.submitted.docsFile, "submittedDocs", 0) + ifUpload("Acknowledgement (from authority)", w.submitted.ackFile, "submittedAck", 0) + "</div></section>";
 
-    h += '<section class="pc-card"><h4 class="pc-card-title">Clearance</h4>';
-    h += w.clearance.map(function (c, i) {
-      return '<div class="' + (i > 0 ? "if-card" : "") + '">' +
-        (i > 0 ? '<div class="if-title">Rev ' + c.rev + " " + (c.submitted ? '<span class="st-chip st-completed">Submitted</span>' : '<span class="st-chip st-na">Draft</span>') + "</div>" : "") +
-        '<div class="pc-q-label">' + P + '.7 Consultant to upload:' + (i > 0 ? " (rev " + c.rev + ")" : "") + "</div>" +
-        '<div class="pc-hint" style="margin-top:0;margin-bottom:8px">' + INFRA_LETTER_TYPES.join(", ") + "</div>" +
-        '<select class="sd-input" ' + (c.submitted ? "disabled" : "") + ' data-infra-change="clrType" data-i="' + i + '"><option value="" ' + (c.type ? "" : "selected") + ' disabled>Select letter type…</option>' + INFRA_LETTER_TYPES.map(function (t) { return "<option " + (c.type === t ? "selected" : "") + ">" + esc(t) + "</option>"; }).join("") + "</select>" +
-        '<div style="display:flex;gap:12px;align-items:center;margin:10px 0;flex-wrap:wrap">' +
-          (c.fileName ? '<span class="if-chip">📄 ' + esc(c.fileName) + "</span>" : '<label class="btn btn-secondary" style="cursor:pointer' + (c.submitted ? ";opacity:.5;pointer-events:none" : "") + '">Upload letter<input type="file" data-infra-file="clrUpload" data-i="' + i + '" style="display:none"></label>') +
-          '<input type="date" class="sd-input" style="max-width:210px" ' + (c.submitted ? "disabled" : "") + ' value="' + esc(c.date) + '" data-infra-change="clrDate" data-i="' + i + '"></div>' +
-        '<input type="text" class="sd-input" placeholder="Reference no. (e.g. EG/SMP/JAS/2026)" ' + (c.submitted ? "disabled" : "") + ' value="' + esc(c.ref) + '" data-infra-input="clrRef" data-i="' + i + '">' +
-        '<div class="pc-q-label" style="margin-top:12px">Condition &amp; Comment by Authority</div>' +
-        '<textarea class="sd-input" rows="3" placeholder="Enter condition / comment by authority…" ' + (c.submitted ? "disabled" : "") + ' data-infra-input="clrComment" data-i="' + i + '">' + esc(c.comment) + "</textarea>" +
-        (c.submitted ? ifStamp(c.submittedAt) : '<div class="sd-actions" style="margin-top:12px"><button class="btn btn-primary" data-infra-act="clrSubmit" data-i="' + i + '">Submit</button></div>') + "</div>";
-    }).join("") + "</section>";
-
+    h += clearanceHtml(w, P + ".7");
     return h + infraAppealHtml(w, P);
   }
   function infraAppealHtml(w, P) {
@@ -1890,13 +1936,15 @@
     const pt = infraPanelType(n), rec = infraNodeRecord(n);
     const zoneTag = infraCurZone() ? ' <span class="pc-hint" style="display:inline;font-weight:400">· ' + esc(infraCurZone().name) + "</span>" : "";
     if (pt === "jas-eia") { title = "EIA — Approved Report"; body = eiaHtml(rec.work); }
-    else if (pt === "jas-emp") { title = "EMP — Environmental Management Plan" + zoneTag; body = empHtml(rec.work, n.n); }
-    else if (pt === "workflow") { title = (n.heading || n.label) + zoneTag; body = empHtml(rec.work, n.n); }
+    else if (pt === "jas-emp") { title = "EMP — Environmental Management Plan"; body = empHtml(rec.work, n.n); }
+    else if (pt === "workflow") { title = (n.heading || n.label); body = empHtml(rec.work, n.n); }
     else if (pt === "link") { title = n.heading || n.label; body = linkPanelHtml(n, rec.work); }
-    else if (pt === "iwk-pdc6") { title = (n.heading || n.label) + zoneTag; body = pdc6Html(rec.work, n.n); }
+    else if (pt === "iwk-pdc6") { title = (n.heading || n.label); body = pdc6Html(rec.work, n.n); }
+    else if (pt === "iwk-pdc7") { title = (n.heading || n.label); body = pdc7Html(rec.work, n.n); }
+    else if (pt === "iwk-pdc8") { title = (n.heading || n.label); body = pdc8Html(rec.work, n.n); }
     else { title = n.label; body = '<p class="sd-note">Working page for this step is coming next.</p>'; }
     panelEl.innerHTML = '<section class="pc-card" style="border-color:var(--brand-green);margin-top:14px">' +
-      '<div class="pc-head-card"><div class="pc-authority">' + esc(title) + "</div>" +
+      '<div class="pc-head-card"><div class="pc-authority">' + esc(title) + zoneTag + "</div>" +
       '<button type="button" class="btn btn-secondary" style="padding:6px 14px;font-size:12px" data-infra-panel-close>✕</button></div>' +
       '<div style="margin-top:14px">' + body + "</div></section>";
     infraSave();
@@ -1920,6 +1968,7 @@
     else if (act === "pcAdd") { w.rounds.push({ n: w.rounds.length + 1, date: "", confirmed: false, confirmedAt: "", notesFile: "" }); }
     else if (act === "reviseConfirm") { const v = (document.getElementById("if-revdate") || {}).value; if (!v) { alert("Pick a date first"); return; } w.revise = { date: v, confirmed: true, confirmedAt: infraNow() }; }
     else if (act === "pdc6Confirm") { if (!w.ackFile) { alert("Upload the acknowledgement document first"); return; } w.confirmed = true; w.confirmedAt = infraNow(); }
+    else if (act === "inspConfirm") { if (!w.inspDate) { alert("Key in the inspection date first"); return; } w.inspConfirmed = true; w.inspConfirmedAt = infraNow(); }
     else if (act === "subApprove") { w.submissions[i].status = "approved"; }
     else if (act === "subRevise") { w.submissions[i].status = "revision"; if (i === w.submissions.length - 1) w.submissions.push({ n: w.submissions.length + 1, file: "", status: "in-review" }); }
     else if (act === "clrSubmit") { const c = w.clearance[i]; if (!c.type) { alert("Select the letter type first"); return; } if (!c.fileName) { alert("Upload the letter first"); return; } c.submitted = true; c.submittedAt = infraNow(); }
@@ -1947,6 +1996,8 @@
     else if (act === "apUploadI") a.i.file = f.name;
     else if (act === "apUploadIV") a.iv.doc = f.name;
     else if (act === "pdc6Ack") w.ackFile = f.name;
+    else if (act === "inspNotes") w.notesFile = f.name;
+    else if (act === "ackDoc") w.ackFile = f.name;
     else return;
     infraRenderPanel();
   }
@@ -1963,6 +2014,7 @@
     else if (act === "apReq") a.ii.req = v;
     else if (act === "apIIdate") a.ii.date = v;
     else if (act === "pdc6Date") w.date = v;
+    else if (act === "inspDate") w.inspDate = v;
     else return;
     infraRenderPanel();
   }
